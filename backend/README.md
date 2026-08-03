@@ -48,6 +48,33 @@ Endpoints :
 
 Variables : `CINETPAY_SANDBOX`, `CINETPAY_SITE_ID`, `CINETPAY_SECRET_KEY`, `CINETPAY_NOTIFY_BASE_URL`.
 
+## Disputes
+
+- Réclamation liée à un plan d'épargne (`savings_goal`) ou un paiement délégué (`payment_link`)
+- Motifs : `non_conforming_product`, `payment_not_received`, `third_party_payer`
+- Statuts : `open` → `in_progress` → `resolved` | `rejected`
+- Pièces jointes (stockage local via `DISPUTE_ATTACHMENT_STORAGE_PORT`)
+- Historique d'échanges (`dispute_messages`)
+- Notation 1–5 post-résolution uniquement
+
+Endpoints :
+
+- `POST /api/disputes`
+- `GET  /api/disputes/:id`
+- `GET  /api/disputes/users/:userId`
+- `PATCH /api/disputes/:id/status`
+- `POST /api/disputes/:id/messages`
+- `POST /api/disputes/:id/attachments`
+- `POST /api/disputes/:id/rating`
+
+## Ledger (`ledger_entries`)
+
+- Append-only : triggers anti `UPDATE`/`DELETE` + privilèges SQL
+- Rôle applicatif `donypay_app` : `GRANT SELECT, INSERT` uniquement
+- `UPDATE`/`DELETE` révoqués pour `donypay_app`, `anon`, `authenticated`, `service_role`, etc.
+- Toute correction = écriture compensatoire (nouvelle ligne), jamais une modification
+- Migration : `20260803060000_ledger_entries_revoke_update_delete`
+
 ## Payment links
 
 - Lien à usage unique pour une échéance `schedule` (montant figé)

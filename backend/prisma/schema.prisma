@@ -59,6 +59,10 @@ model User {
   shop                Shop?
   savingsGoals        SavingsGoal[]
   notifications       Notification[]
+  disputesOpened      Dispute[]           @relation("DisputeOpenedBy")
+  disputeMessages     DisputeMessage[]
+  disputeAttachments  DisputeAttachment[]
+  disputeRatings      DisputeRating[]
 
   @@index([kycStatus])
   @@map("users")
@@ -244,6 +248,7 @@ model SavingsGoal {
 
   installments SavingsInstallment[]
   deposits     SavingsDeposit[]
+  disputes     Dispute[]
 
   @@index([userId, status])
   @@index([productId])
@@ -315,9 +320,111 @@ model PaymentLink {
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  disputes Dispute[]
+
   @@index([installmentId, status])
   @@index([expiresAt])
   @@map("payment_links")
+}
+
+// ---------------------------------------------------------------------------
+// Disputes (réclamations)
+// ---------------------------------------------------------------------------
+
+/// Motif de réclamation.
+enum DisputeReason {
+  non_conforming_product
+  payment_not_received
+  third_party_payer
+}
+
+/// Cycle de vie d'un litige.
+enum DisputeStatus {
+  open
+  in_progress
+  resolved
+  rejected
+}
+
+/// Cible de la réclamation : plan d'épargne ou paiement délégué.
+enum DisputeSubjectType {
+  savings_goal
+  payment_link
+}
+
+model Dispute {
+  id            String             @id @default(uuid())
+  openedById    String             @map("opened_by_id")
+  openedBy      User               @relation("DisputeOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+  reason        DisputeReason
+  status        DisputeStatus      @default(open)
+  subjectType   DisputeSubjectType @map("subject_type")
+  savingsGoalId String?            @map("savings_goal_id")
+  savingsGoal   SavingsGoal?       @relation(fields: [savingsGoalId], references: [id], onDelete: SetNull)
+  paymentLinkId String?            @map("payment_link_id")
+  paymentLink   PaymentLink?       @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
+  title         String
+  description   String
+  resolutionNote String?           @map("resolution_note")
+  resolvedAt    DateTime?          @map("resolved_at") @db.Timestamptz(6)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  messages    DisputeMessage[]
+  attachments DisputeAttachment[]
+  rating      DisputeRating?
+
+  @@index([openedById, status])
+  @@index([savingsGoalId])
+  @@index([paymentLinkId])
+  @@index([status, createdAt])
+  @@map("disputes")
+}
+
+/// Historique d'échanges sur un litige.
+model DisputeMessage {
+  id        String   @id @default(uuid())
+  disputeId String   @map("dispute_id")
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([disputeId, createdAt])
+  @@map("dispute_messages")
+}
+
+/// Pièce jointe liée à un litige.
+model DisputeAttachment {
+  id           String   @id @default(uuid())
+  disputeId    String   @map("dispute_id")
+  dispute      Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  uploadedById String   @map("uploaded_by_id")
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  storageKey   String   @map("storage_key")
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([disputeId])
+  @@map("dispute_attachments")
+}
+
+/// Notation utilisateur post-résolution (uniquement si status = resolved).
+model DisputeRating {
+  id        String   @id @default(uuid())
+  disputeId String   @unique @map("dispute_id")
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("dispute_ratings")
 }
 
 // ---------------------------------------------------------------------------

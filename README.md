@@ -44,8 +44,46 @@ API NestJS modulaire (préfixe `/api`) :
 | savings-engine | `GET /api/savings-engine/hello` — objectifs schedule/flexi, dépôts LedgerPort, notif vendeur |
 | payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
 | ledger-adapter | `GET /api/ledger-adapter/hello` — `LedgerPort` (Mock + MobileMoney/CinetPay) |
-| notifications | `GET /api/notifications/hello` |
-| disputes | `GET /api/disputes/hello` |
+| notifications | `GET /api/notifications/hello` — port `NotificationPort`, mock SMS/push |
+| disputes | `GET /api/disputes/hello` — réclamations, PJ, historique, notation |
+
+### Disputes (réclamations)
+
+Réclamation liée à un **plan d'épargne** (`savings_goal`) ou un **paiement délégué** (`payment_link`).
+
+| Motif | Valeur |
+| --- | --- |
+| Produit non conforme | `non_conforming_product` |
+| Paiement non reçu | `payment_not_received` |
+| Litige payeur tiers | `third_party_payer` |
+
+Statuts : `open` → `in_progress` → `resolved` | `rejected`.
+
+| Endpoint | Description |
+| --- | --- |
+| `POST /api/disputes` | Ouvrir une réclamation (+ premier message) |
+| `GET /api/disputes/:id` | Détail (messages, PJ, notation) |
+| `GET /api/disputes/users/:userId` | Liste des litiges d’un utilisateur |
+| `PATCH /api/disputes/:id/status` | Changer le statut |
+| `POST /api/disputes/:id/messages` | Ajouter un échange |
+| `POST /api/disputes/:id/attachments` | Pièce jointe (`multipart` `file` + `uploadedById`) |
+| `POST /api/disputes/:id/rating` | Notation 1–5 post-résolution uniquement |
+
+### Notifications (port découplé)
+
+Événements déclencheurs (canaux SMS + push) :
+
+| Événement | Déclencheur |
+| --- | --- |
+| `deposit_received` | Versement crédité sur un objectif |
+| `goal_reached` | Objectif atteint (vendeur aussi notifié) |
+| `installment_due` | Échéance planifiée à venir (rappels) |
+| `payment_link_paid_by_third_party` | Lien payé par un tiers (téléphone ≠ propriétaire) |
+| `plan_cancelled` | Annulation d’un plan d’épargne (`POST /savings/goals/:id/cancel`) |
+
+- Port : `NotificationPort` (`NOTIFICATION_PORT`)
+- Adaptateur actuel : `MockNotificationAdapter` (log console, **privé** au module)
+- Provider SMS cible (non branché) : Yellikasms — à brancher via un futur adaptateur
 
 ### Tests (Jest)
 
