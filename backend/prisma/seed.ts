@@ -46,7 +46,7 @@ async function latestBalance(
 ): Promise<Prisma.Decimal> {
   const last = await tx.ledgerEntry.findFirst({
     where: { accountId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { sequence: 'desc' },
     select: { balanceAfter: true },
   });
   return last?.balanceAfter ?? new Prisma.Decimal(0);

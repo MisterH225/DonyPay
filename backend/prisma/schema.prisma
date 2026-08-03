@@ -176,9 +176,12 @@ model LedgerEntry {
   amount       Decimal         @db.Decimal(18, 2)
   balanceAfter Decimal         @map("balance_after") @db.Decimal(18, 2)
   metadata     Json?
+  /// Ordre total monotone (auto-increment) — critère de tri fiable pour le solde.
+  sequence     Int             @default(autoincrement())
   createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([accountId, createdAt])
+  @@index([accountId, sequence])
   @@map("ledger_entries")
 }
 
