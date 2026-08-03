@@ -56,6 +56,7 @@ model User {
 
   documents           KycDocument[]
   twoFactorChallenges TwoFactorChallenge[]
+  shop                Shop?
 
   @@index([kycStatus])
   @@map("users")
@@ -88,4 +89,38 @@ model TwoFactorChallenge {
 
   @@index([userId, createdAt])
   @@map("two_factor_challenges")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+/// Boutique — un vendeur (User) possède au plus une boutique.
+model Shop {
+  id          String    @id @default(uuid())
+  sellerId    String    @unique @map("seller_id")
+  seller      User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  products    Product[]
+
+  @@map("shops")
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  shopId     String   @map("shop_id")
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name       String
+  price      Decimal  @db.Decimal(18, 2)
+  photoKey   String?  @map("photo_key")
+  qrPayload  String   @map("qr_payload")
+  qrCodeKey  String   @map("qr_code_key")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([shopId])
+  @@map("products")
 }

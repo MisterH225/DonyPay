@@ -26,6 +26,21 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+## Catalog
+
+- Boutique : un vendeur (`User`) = une boutique (`shops.seller_id` unique)
+- Produit : nom, prix, photo optionnelle, QR code généré automatiquement
+- Listing : `GET /api/catalog/shops/:shopId/products`
+
+Endpoints :
+
+- `POST /api/catalog/shops`
+- `GET  /api/catalog/shops/:id`
+- `GET  /api/catalog/sellers/:sellerId/shop`
+- `POST /api/catalog/shops/:shopId/products` (multipart `photo` + champs `name`, `price`)
+- `GET  /api/catalog/shops/:shopId/products`
+- `GET  /api/catalog/products/:id`
+
 ## Identity
 
 - Modèle `User` : `individual` (particulier) ou `company` (entreprise)
