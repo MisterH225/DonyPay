@@ -16,6 +16,7 @@ import { PaymentLinksService } from './payment-links.service';
 describe('PaymentLinksService', () => {
   let service: PaymentLinksService;
   let savingsGoals: { recordDeposit: jest.Mock };
+  let notifications: { notifyPaymentLinkPaidByThirdParty: jest.Mock };
   let links: Array<Record<string, unknown>>;
   let installment: Record<string, unknown>;
   let prisma: Record<string, any>;
@@ -35,7 +36,9 @@ describe('PaymentLinksService', () => {
       payerOperator: null,
       goal: {
         id: 'goal-1',
+        goalId: 'goal-1',
         mode: SavingsMode.schedule,
+        user: { id: 'buyer-1', phone: '+2250700000000' },
         product: {
           name: 'Sneakers',
           shop: { name: 'Boutique Alice', sellerId: 'seller-1' },
@@ -47,6 +50,10 @@ describe('PaymentLinksService', () => {
 
     savingsGoals = {
       recordDeposit: jest.fn(async () => ({ id: 'goal-1' })),
+    };
+
+    notifications = {
+      notifyPaymentLinkPaidByThirdParty: jest.fn(async () => ({ id: 'n-1' })),
     };
 
     prisma = {
@@ -120,6 +127,7 @@ describe('PaymentLinksService', () => {
     service = new PaymentLinksService(
       prisma as unknown as PrismaService,
       savingsGoals as unknown as SavingsGoalsService,
+      notifications as unknown as import('../notifications').NotificationsService,
     );
   });
 
@@ -170,6 +178,25 @@ describe('PaymentLinksService', () => {
       operator: 'Orange',
     });
     expect(installment.payerName).toBe('Jean Dupont');
+    // même numéro que le owner → pas de notif "tiers"
+    expect(notifications.notifyPaymentLinkPaidByThirdParty).not.toHaveBeenCalled();
+  });
+
+  it('notifies owner when payment link is paid by a third party', async () => {
+    const created = await service.create({ installmentId: 'inst-1' });
+
+    await service.handleMobileMoneyCallback(created.token, {
+      status: 'success',
+      payerName: 'Marie',
+      payerPhone: '+2250800000000',
+      payerOperator: 'MTN',
+    });
+
+    expect(notifications.notifyPaymentLinkPaidByThirdParty).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'buyer-1',
+      }),
+    );
   });
 
   it('rejects reuse of a paid link', async () => {

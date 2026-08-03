@@ -15,13 +15,16 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LEDGER_PORT, type LedgerPort } from '../ledger-adapter';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsService } from '../notifications';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { RecordDepositDto } from './dto/record-deposit.dto';
 
 type GoalWithRelations = SavingsGoal & {
   installments: SavingsInstallment[];
-  product: Product & { shop: { sellerId: string; name: string } };
+  product: Product & {
+    shop: { sellerId: string; name: string; seller?: { phone: string | null } };
+  };
+  user?: { id: string; phone: string | null; email: string };
 };
 
 @Injectable()
@@ -79,7 +82,8 @@ export class SavingsGoalsService {
       },
       include: {
         installments: { orderBy: { sequence: 'asc' } },
-        product: { include: { shop: true } },
+        product: { include: { shop: { include: { seller: true } } } },
+        user: true,
       },
     });
 
@@ -91,7 +95,8 @@ export class SavingsGoalsService {
       where: { id },
       include: {
         installments: { orderBy: { sequence: 'asc' } },
-        product: { include: { shop: true } },
+        product: { include: { shop: { include: { seller: true } } } },
+        user: true,
       },
     });
 
@@ -191,16 +196,30 @@ export class SavingsGoalsService {
         },
         include: {
           installments: { orderBy: { sequence: 'asc' } },
-          product: { include: { shop: true } },
+          product: { include: { shop: { include: { seller: true } } } },
+          user: true,
           deposits: { orderBy: { createdAt: 'desc' } },
         },
       });
     });
 
+    await this.notifications.notifyDepositReceived({
+      userId: updated.userId,
+      phone: updated.user.phone,
+      title: 'Versement reçu',
+      body: `Versement de ${amount.toString()} enregistré pour « ${updated.product.name} ».`,
+      metadata: {
+        goalId: updated.id,
+        productId: updated.productId,
+        amount: amount.toString(),
+        installmentId: installment?.id,
+      },
+    });
+
     if (reached) {
-      await this.notifications.notify({
+      await this.notifications.notifyGoalReached({
         userId: updated.product.shop.sellerId,
-        type: 'savings.ready_for_withdrawal',
+        phone: updated.product.shop.seller?.phone,
         title: 'Objectif d’épargne atteint',
         body: `L’épargne pour « ${updated.product.name} » est prête pour retrait.`,
         metadata: {
@@ -211,6 +230,54 @@ export class SavingsGoalsService {
         },
       });
     }
+
+    return updated;
+  }
+
+  async cancel(goalId: string) {
+    const goal = await this.findById(goalId);
+
+    if (
+      goal.status === SavingsGoalStatus.cancelled ||
+      goal.status === SavingsGoalStatus.completed
+    ) {
+      throw new BadRequestException(
+        `Cannot cancel goal with status ${goal.status}`,
+      );
+    }
+
+    const updated = await this.prisma.savingsGoal.update({
+      where: { id: goalId },
+      data: {
+        status: SavingsGoalStatus.cancelled,
+        installments: {
+          updateMany: {
+            where: {
+              status: {
+                in: [InstallmentStatus.pending, InstallmentStatus.overdue],
+              },
+            },
+            data: { status: InstallmentStatus.cancelled },
+          },
+        },
+      },
+      include: {
+        installments: { orderBy: { sequence: 'asc' } },
+        product: { include: { shop: { include: { seller: true } } } },
+        user: true,
+      },
+    });
+
+    await this.notifications.notifyPlanCancelled({
+      userId: updated.userId,
+      phone: updated.user.phone,
+      title: 'Plan d’épargne annulé',
+      body: `Votre plan pour « ${updated.product.name} » a été annulé.`,
+      metadata: {
+        goalId: updated.id,
+        productId: updated.productId,
+      },
+    });
 
     return updated;
   }
@@ -234,7 +301,10 @@ export class SavingsGoalsService {
       },
       include: {
         goal: {
-          include: { product: true },
+          include: {
+            product: true,
+            user: true,
+          },
         },
       },
       orderBy: { dueDate: 'asc' },
@@ -243,11 +313,11 @@ export class SavingsGoalsService {
     const sent = [];
 
     for (const installment of dueInstallments) {
-      const notification = await this.notifications.notify({
+      const notification = await this.notifications.notifyInstallmentDue({
         userId: installment.goal.userId,
-        type: 'savings.installment_reminder',
-        title: 'Rappel d’échéance d’épargne',
-        body: `Versement de ${installment.amount.toString()} € dû le ${installment.dueDate.toISOString().slice(0, 10)} pour « ${installment.goal.product.name} ».`,
+        phone: installment.goal.user.phone,
+        title: 'Échéance d’épargne à venir',
+        body: `Versement de ${installment.amount.toString()} dû le ${installment.dueDate.toISOString().slice(0, 10)} pour « ${installment.goal.product.name} ».`,
         metadata: {
           goalId: installment.goalId,
           installmentId: installment.id,

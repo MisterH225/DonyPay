@@ -26,6 +26,7 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+<<<<<<< HEAD
 ## Disputes
 
 - Réclamation liée à un plan d'épargne (`savings_goal`) ou un paiement délégué (`payment_link`)
@@ -44,6 +45,15 @@ Endpoints :
 - `POST /api/disputes/:id/messages`
 - `POST /api/disputes/:id/attachments`
 - `POST /api/disputes/:id/rating`
+=======
+## Ledger (`ledger_entries`)
+
+- Append-only : triggers anti `UPDATE`/`DELETE` + privilèges SQL
+- Rôle applicatif `donypay_app` : `GRANT SELECT, INSERT` uniquement
+- `UPDATE`/`DELETE` révoqués pour `donypay_app`, `anon`, `authenticated`, `service_role`, etc.
+- Toute correction = écriture compensatoire (nouvelle ligne), jamais une modification
+- Migration : `20260803060000_ledger_entries_revoke_update_delete`
+>>>>>>> origin/main
 
 ## Payment links
 
