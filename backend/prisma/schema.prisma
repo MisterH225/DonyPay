@@ -229,9 +229,13 @@ model SavingsInstallment {
   status         InstallmentStatus @default(pending)
   reminderSentAt DateTime?         @map("reminder_sent_at") @db.Timestamptz(6)
   paidAt         DateTime?         @map("paid_at") @db.Timestamptz(6)
+  payerName      String?           @map("payer_name")
+  payerPhone     String?           @map("payer_phone")
+  payerOperator  String?           @map("payer_operator")
   createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  deposits SavingsDeposit[]
+  deposits     SavingsDeposit[]
+  paymentLinks PaymentLink[]
 
   @@index([goalId, dueDate])
   @@index([status, dueDate])
@@ -249,6 +253,39 @@ model SavingsDeposit {
 
   @@index([goalId, createdAt])
   @@map("savings_deposits")
+}
+
+// ---------------------------------------------------------------------------
+// Payment links
+// ---------------------------------------------------------------------------
+
+enum PaymentLinkStatus {
+  pending
+  paid
+  expired
+  cancelled
+}
+
+/// Lien de paiement à usage unique pour une échéance précise.
+model PaymentLink {
+  id            String            @id @default(uuid())
+  token         String            @unique
+  installmentId String            @map("installment_id")
+  installment   SavingsInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  amount        Decimal           @db.Decimal(18, 2)
+  status        PaymentLinkStatus @default(pending)
+  expiresAt     DateTime          @map("expires_at") @db.Timestamptz(6)
+  usedAt        DateTime?         @map("used_at") @db.Timestamptz(6)
+  payerName     String?           @map("payer_name")
+  payerPhone    String?           @map("payer_phone")
+  payerOperator String?           @map("payer_operator")
+  providerRef   String?           @map("provider_ref")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([installmentId, status])
+  @@index([expiresAt])
+  @@map("payment_links")
 }
 
 // ---------------------------------------------------------------------------

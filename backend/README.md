@@ -26,6 +26,21 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+## Payment links
+
+- Lien à usage unique pour une échéance `schedule` (montant figé)
+- Expiration configurable (`PAYMENT_LINK_TTL_HOURS`, défaut 48h)
+- Page publique sans compte : `GET /api/payment-links/public/:token`
+- Callback mobile money → rattache payeur (nom/numéro/opérateur) à l’échéance
+  puis `LedgerPort.recordDeposit` via `SavingsGoalsService`
+
+Endpoints :
+
+- `POST /api/payment-links`
+- `GET  /api/payment-links/public/:token` (JSON ou HTML)
+- `GET  /api/payment-links/public/:token/page`
+- `POST /api/payment-links/public/:token/callback`
+
 ## Savings engine
 
 - Objectif d’épargne lié à un produit (`targetAmount` = prix produit)
