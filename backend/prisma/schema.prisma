@@ -9,3 +9,300 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+enum UserType {
+  individual
+  company
+}
+
+enum KycStatus {
+  pending
+  verified
+  rejected
+}
+
+enum KycDocumentType {
+  identity_document
+  proof_of_address
+}
+
+enum TwoFactorMethod {
+  totp
+  sms
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  phone            String?
+  type             UserType
+  firstName        String?          @map("first_name")
+  lastName         String?          @map("last_name")
+  companyName      String?          @map("company_name")
+  siret            String?
+  kycStatus        KycStatus        @default(pending) @map("kyc_status")
+  kycReviewedAt    DateTime?        @map("kyc_reviewed_at") @db.Timestamptz(6)
+  kycRejectReason  String?          @map("kyc_reject_reason")
+  externalKycId    String?          @map("external_kyc_id")
+  twoFactorEnabled Boolean          @default(false) @map("two_factor_enabled")
+  twoFactorMethod  TwoFactorMethod? @map("two_factor_method")
+  totpSecret       String?          @map("totp_secret")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  documents           KycDocument[]
+  twoFactorChallenges TwoFactorChallenge[]
+  shop                Shop?
+  savingsGoals        SavingsGoal[]
+  notifications       Notification[]
+
+  @@index([kycStatus])
+  @@map("users")
+}
+
+model KycDocument {
+  id           String          @id @default(uuid())
+  userId       String          @map("user_id")
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         KycDocumentType
+  storageKey   String          @map("storage_key")
+  originalName String          @map("original_name")
+  mimeType     String          @map("mime_type")
+  sizeBytes    Int             @map("size_bytes")
+  uploadedAt   DateTime        @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  @@index([userId, type])
+  @@map("kyc_documents")
+}
+
+model TwoFactorChallenge {
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method     TwoFactorMethod
+  codeHash   String?         @map("code_hash")
+  expiresAt  DateTime        @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime?       @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@map("two_factor_challenges")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+/// Boutique — un vendeur (User) possède au plus une boutique.
+model Shop {
+  id          String    @id @default(uuid())
+  sellerId    String    @unique @map("seller_id")
+  seller      User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  products    Product[]
+
+  @@map("shops")
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  shopId       String        @map("shop_id")
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name         String
+  price        Decimal       @db.Decimal(18, 2)
+  photoKey     String?       @map("photo_key")
+  qrPayload    String        @map("qr_payload")
+  qrCodeKey    String        @map("qr_code_key")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  savingsGoals SavingsGoal[]
+
+  @@index([shopId])
+  @@map("products")
+}
+
+// ---------------------------------------------------------------------------
+// Ledger
+// ---------------------------------------------------------------------------
+
+enum LedgerEntryType {
+  debit
+  credit
+}
+
+enum LedgerAccountKind {
+  savings
+  clearing
+}
+
+/// Compte ledger (épargne utilisateur ou compte de compensation système).
+model LedgerAccount {
+  id        String            @id @default(uuid())
+  userId    String?           @map("user_id")
+  kind      LedgerAccountKind
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  entries   LedgerEntry[]
+
+  @@index([userId])
+  @@map("ledger_accounts")
+}
+
+/// Écritures append-only (jamais d'UPDATE / DELETE).
+model LedgerEntry {
+  id           String          @id @default(uuid())
+  accountId    String          @map("account_id")
+  account      LedgerAccount   @relation(fields: [accountId], references: [id])
+  type         LedgerEntryType
+  amount       Decimal         @db.Decimal(18, 2)
+  balanceAfter Decimal         @map("balance_after") @db.Decimal(18, 2)
+  metadata     Json?
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([accountId, createdAt])
+  @@map("ledger_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Savings engine
+// ---------------------------------------------------------------------------
+
+enum SavingsMode {
+  schedule
+  flexi
+}
+
+enum SavingsGoalStatus {
+  active
+  ready_for_withdrawal
+  completed
+  cancelled
+}
+
+enum InstallmentStatus {
+  pending
+  paid
+  overdue
+  cancelled
+}
+
+/// Objectif d'épargne lié à un produit (montant cible = prix produit).
+model SavingsGoal {
+  id              String            @id @default(uuid())
+  userId          String            @map("user_id")
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId       String            @map("product_id")
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  mode            SavingsMode
+  targetAmount    Decimal           @map("target_amount") @db.Decimal(18, 2)
+  savedAmount     Decimal           @default(0) @map("saved_amount") @db.Decimal(18, 2)
+  status          SavingsGoalStatus @default(active)
+  ledgerAccountId String            @map("ledger_account_id")
+  flexiStartsAt   DateTime?         @map("flexi_starts_at") @db.Timestamptz(6)
+  flexiEndsAt     DateTime?         @map("flexi_ends_at") @db.Timestamptz(6)
+  readyAt         DateTime?         @map("ready_at") @db.Timestamptz(6)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  installments SavingsInstallment[]
+  deposits     SavingsDeposit[]
+
+  @@index([userId, status])
+  @@index([productId])
+  @@map("savings_goals")
+}
+
+/// Échéance fixe (mode Échéancier) avec rappel.
+model SavingsInstallment {
+  id             String            @id @default(uuid())
+  goalId         String            @map("goal_id")
+  goal           SavingsGoal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  sequence       Int
+  dueDate        DateTime          @map("due_date") @db.Timestamptz(6)
+  amount         Decimal           @db.Decimal(18, 2)
+  status         InstallmentStatus @default(pending)
+  reminderSentAt DateTime?         @map("reminder_sent_at") @db.Timestamptz(6)
+  paidAt         DateTime?         @map("paid_at") @db.Timestamptz(6)
+  payerName      String?           @map("payer_name")
+  payerPhone     String?           @map("payer_phone")
+  payerOperator  String?           @map("payer_operator")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  deposits     SavingsDeposit[]
+  paymentLinks PaymentLink[]
+
+  @@index([goalId, dueDate])
+  @@index([status, dueDate])
+  @@map("savings_installments")
+}
+
+model SavingsDeposit {
+  id            String              @id @default(uuid())
+  goalId        String              @map("goal_id")
+  goal          SavingsGoal         @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  installmentId String?             @map("installment_id")
+  installment   SavingsInstallment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
+  amount        Decimal             @db.Decimal(18, 2)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([goalId, createdAt])
+  @@map("savings_deposits")
+}
+
+// ---------------------------------------------------------------------------
+// Payment links
+// ---------------------------------------------------------------------------
+
+enum PaymentLinkStatus {
+  pending
+  paid
+  expired
+  cancelled
+}
+
+/// Lien de paiement à usage unique pour une échéance précise.
+model PaymentLink {
+  id            String            @id @default(uuid())
+  token         String            @unique
+  installmentId String            @map("installment_id")
+  installment   SavingsInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  amount        Decimal           @db.Decimal(18, 2)
+  status        PaymentLinkStatus @default(pending)
+  expiresAt     DateTime          @map("expires_at") @db.Timestamptz(6)
+  usedAt        DateTime?         @map("used_at") @db.Timestamptz(6)
+  payerName     String?           @map("payer_name")
+  payerPhone    String?           @map("payer_phone")
+  payerOperator String?           @map("payer_operator")
+  providerRef   String?           @map("provider_ref")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([installmentId, status])
+  @@index([expiresAt])
+  @@map("payment_links")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  metadata  Json?
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}

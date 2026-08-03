@@ -39,10 +39,10 @@ API NestJS modulaire (préfixe `/api`) :
 
 | Module | Endpoint hello-world |
 |---|---|
-| identity | `GET /api/identity/hello` |
-| catalog | `GET /api/catalog/hello` |
-| savings-engine | `GET /api/savings-engine/hello` |
-| payment-links | `GET /api/payment-links/hello` |
+| identity | `GET /api/identity/hello` — User, KYC, uploads, 2FA, port `KycProviderPort` |
+| catalog | `GET /api/catalog/hello` — boutiques, produits, QR, listing |
+| savings-engine | `GET /api/savings-engine/hello` — objectifs schedule/flexi, dépôts LedgerPort, notif vendeur |
+| payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
 | ledger-adapter | `GET /api/ledger-adapter/hello` |
 | notifications | `GET /api/notifications/hello` |
 | disputes | `GET /api/disputes/hello` |
