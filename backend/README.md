@@ -26,6 +26,21 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+## Savings engine
+
+- Objectif d’épargne lié à un produit (`targetAmount` = prix produit)
+- Modes : `schedule` (échéancier + rappels) / `flexi` (versements libres sur une période)
+- Chaque versement appelle `LedgerPort.recordDeposit`
+- Objectif atteint → statut `ready_for_withdrawal` + notification vendeur
+
+Endpoints :
+
+- `POST /api/savings-engine/goals`
+- `GET  /api/savings-engine/goals/:id`
+- `GET  /api/savings-engine/users/:userId/goals`
+- `POST /api/savings-engine/goals/:id/deposits`
+- `POST /api/savings-engine/reminders/dispatch`
+
 ## Catalog
 
 - Boutique : un vendeur (`User`) = une boutique (`shops.seller_id` unique)
