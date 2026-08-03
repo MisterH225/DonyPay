@@ -1,0 +1,11 @@
+// DonyPay — Prisma schema
+// Models métier à ajouter progressivement (identity, catalog, etc.)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
