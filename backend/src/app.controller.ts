@@ -9,4 +9,10 @@ export class AppController {
   getHello() {
     return this.appService.getHello();
   }
+
+  /** Healthcheck Railway / load balancers — `GET /api/health`. */
+  @Get('health')
+  health() {
+    return { status: 'ok' };
+  }
 }

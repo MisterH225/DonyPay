@@ -17,9 +17,10 @@ Config versionnée : `railway.toml` + `backend/Dockerfile`.
 Dans le service Railway :
 - **Root Directory** : `/` (racine du monorepo)
 - **Builder** : Dockerfile (`backend/Dockerfile`)
-- Variables : `DATABASE_URL` (Postgres Railway ou Supabase)
+- Variables **obligatoires** : `DATABASE_URL` (Postgres Railway ou Supabase)
+- Healthcheck : `GET /api/health` (écoute `0.0.0.0:$PORT`)
 
-Le build Nixpacks « nu » échoue car `NODE_ENV=production` omet les `devDependencies` (`nest: not found`). Le Dockerfile installe les outils de build puis prune.
+Sans `DATABASE_URL`, le conteneur quitte au démarrage (`prisma migrate` / Prisma connect) → healthcheck « Path: /api/health » en échec.
 
 ## Prérequis
 
