@@ -17,10 +17,18 @@ Config versionnée : `railway.toml` + `backend/Dockerfile`.
 Dans le service Railway :
 - **Root Directory** : `/` (racine du monorepo)
 - **Builder** : Dockerfile (`backend/Dockerfile`)
-- Variables **obligatoires** : `DATABASE_URL` (Postgres Railway ou Supabase)
-- Healthcheck : `GET /api/health` (écoute `0.0.0.0:$PORT`)
+- Healthcheck : `GET /api/health`
 
-Sans `DATABASE_URL`, le conteneur quitte au démarrage (`prisma migrate` / Prisma connect) → healthcheck « Path: /api/health » en échec.
+### Variables (service API — pas le service Postgres)
+
+| Variable | Valeur |
+| --- | --- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence vers le service Postgres Railway) |
+| `PORT` | **ne pas définir** (Railway l’injecte ; surtout pas `5432`) |
+
+Pièges fréquents :
+- `PORT=5432` → c’est le port Postgres, pas celui de Nest
+- `DATABASE_URL` pointant vers `db.xxx.supabase.co:5432` → souvent **injoignable** depuis Railway (utiliser Postgres Railway, ou le **pooler** Supabase)
 
 ## Prérequis
 
