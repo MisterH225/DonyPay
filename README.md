@@ -8,6 +8,19 @@ Monorepo :
 - `mobile/` — React Native (Expo) avec bascule acheteur / vendeur
 - `docker-compose.yml` — Postgres local
 
+## Déploiement Railway
+
+Projet Railway : `90de654d-6836-45a1-b750-c61b52aa29b3`
+
+Config versionnée : `railway.toml` + `backend/Dockerfile`.
+
+Dans le service Railway :
+- **Root Directory** : `/` (racine du monorepo)
+- **Builder** : Dockerfile (`backend/Dockerfile`)
+- Variables : `DATABASE_URL` (Postgres Railway ou Supabase)
+
+Le build Nixpacks « nu » échoue car `NODE_ENV=production` omet les `devDependencies` (`nest: not found`). Le Dockerfile installe les outils de build puis prune.
+
 ## Prérequis
 
 - Node.js 20+

@@ -1,0 +1,19 @@
+# Fallback si le builder Nixpacks est utilisé (sans Dockerfile).
+# Corrige l'échec classique : NODE_ENV=production omet les devDependencies
+# → `nest: not found` / prisma CLI absent.
+
+[variables]
+NPM_CONFIG_PRODUCTION = "false"
+NIXPACKS_NODE_VERSION = "20"
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = [
+  "npm run prisma:generate --workspace=backend",
+  "npm run build --workspace=backend",
+]
+
+[start]
+cmd = "npm run start:prod --workspace=backend"
