@@ -26,6 +26,26 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+<<<<<<< HEAD
+## Disputes
+
+- Réclamation liée à un plan d'épargne (`savings_goal`) ou un paiement délégué (`payment_link`)
+- Motifs : `non_conforming_product`, `payment_not_received`, `third_party_payer`
+- Statuts : `open` → `in_progress` → `resolved` | `rejected`
+- Pièces jointes (stockage local via `DISPUTE_ATTACHMENT_STORAGE_PORT`)
+- Historique d'échanges (`dispute_messages`)
+- Notation 1–5 post-résolution uniquement
+
+Endpoints :
+
+- `POST /api/disputes`
+- `GET  /api/disputes/:id`
+- `GET  /api/disputes/users/:userId`
+- `PATCH /api/disputes/:id/status`
+- `POST /api/disputes/:id/messages`
+- `POST /api/disputes/:id/attachments`
+- `POST /api/disputes/:id/rating`
+=======
 ## Ledger (`ledger_entries`)
 
 - Append-only : triggers anti `UPDATE`/`DELETE` + privilèges SQL
@@ -33,6 +53,7 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - `UPDATE`/`DELETE` révoqués pour `donypay_app`, `anon`, `authenticated`, `service_role`, etc.
 - Toute correction = écriture compensatoire (nouvelle ligne), jamais une modification
 - Migration : `20260803060000_ledger_entries_revoke_update_delete`
+>>>>>>> origin/main
 
 ## Payment links
 
