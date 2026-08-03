@@ -43,7 +43,7 @@ API NestJS modulaire (préfixe `/api`) :
 | catalog | `GET /api/catalog/hello` |
 | savings-engine | `GET /api/savings-engine/hello` |
 | payment-links | `GET /api/payment-links/hello` |
-| ledger-adapter | `GET /api/ledger-adapter/hello` |
+| ledger-adapter | `GET /api/ledger-adapter/hello` — port `LedgerPort` + `MockLedgerAdapter` (append-only) |
 | notifications | `GET /api/notifications/hello` |
 | disputes | `GET /api/disputes/hello` |
 
