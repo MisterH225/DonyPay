@@ -1,4 +1,5 @@
 import { IsObject, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { NotificationEventType } from '../ports/notification.port';
 
 export class CreateNotificationDto {
   @IsUUID()
@@ -6,7 +7,7 @@ export class CreateNotificationDto {
 
   @IsString()
   @MinLength(1)
-  type!: string;
+  type!: NotificationEventType | string;
 
   @IsString()
   @MinLength(1)
@@ -15,6 +16,14 @@ export class CreateNotificationDto {
   @IsString()
   @MinLength(1)
   body!: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  pushToken?: string;
 
   @IsOptional()
   @IsObject()
