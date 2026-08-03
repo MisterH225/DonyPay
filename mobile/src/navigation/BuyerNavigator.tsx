@@ -5,15 +5,20 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BuyerHomeScreen } from '../screens/buyer/BuyerHomeScreen';
 import { CartScreen } from '../screens/buyer/CartScreen';
 import { CheckoutScreen } from '../screens/buyer/CheckoutScreen';
+import { CreateGoalScreen } from '../screens/buyer/CreateGoalScreen';
+import { GoalDetailScreen } from '../screens/buyer/GoalDetailScreen';
+import { KycOnboardingScreen } from '../screens/buyer/KycOnboardingScreen';
 import { MessagesScreen } from '../screens/buyer/MessagesScreen';
 import { OrderConfirmationScreen } from '../screens/buyer/OrderConfirmationScreen';
+import { PaymentLinkShareScreen } from '../screens/buyer/PaymentLinkShareScreen';
 import { ProductDetailScreen } from '../screens/buyer/ProductDetailScreen';
 import { ProductListScreen } from '../screens/buyer/ProductListScreen';
 import { ProfileScreen } from '../screens/buyer/ProfileScreen';
-import { SavingsHomeScreen } from '../screens/buyer/SavingsHomeScreen';
 import { ScannerScreen } from '../screens/buyer/ScannerScreen';
+import { TransactionsScreen } from '../screens/buyer/TransactionsScreen';
 import { colors } from '../theme/colors';
 
 export type BuyerTabParamList = {
@@ -30,6 +35,16 @@ export type BuyerStackParamList = {
   Cart: undefined;
   Checkout: undefined;
   OrderConfirmation: { orderId: string; total: number };
+  CreateGoal: { productId?: string } | undefined;
+  GoalDetail: { goalId: string };
+  PaymentLinkShare: {
+    installmentId: string;
+    goalId: string;
+    amount: string;
+    productName?: string;
+  };
+  KycOnboarding: undefined;
+  Historique: undefined;
 };
 
 const Tab = createBottomTabNavigator<BuyerTabParamList>();
@@ -78,7 +93,7 @@ function BuyerTabs() {
       />
       <Tab.Screen
         name="Epargnes"
-        component={SavingsHomeScreen}
+        component={BuyerHomeScreen}
         options={{
           title: 'Mes épargnes',
           tabBarIcon: ({ color, size }) => (
@@ -135,6 +150,31 @@ export function BuyerNavigator() {
       <Stack.Screen
         name="OrderConfirmation"
         component={OrderConfirmationScreen}
+      />
+      <Stack.Screen
+        name="CreateGoal"
+        component={CreateGoalScreen}
+        options={{ headerShown: true, title: 'Nouvel objectif' }}
+      />
+      <Stack.Screen
+        name="GoalDetail"
+        component={GoalDetailScreen}
+        options={{ headerShown: true, title: 'Objectif' }}
+      />
+      <Stack.Screen
+        name="PaymentLinkShare"
+        component={PaymentLinkShareScreen}
+        options={{ headerShown: true, title: 'Lien de paiement' }}
+      />
+      <Stack.Screen
+        name="KycOnboarding"
+        component={KycOnboardingScreen}
+        options={{ headerShown: true, title: 'Vérification KYC' }}
+      />
+      <Stack.Screen
+        name="Historique"
+        component={TransactionsScreen}
+        options={{ headerShown: true, title: 'Historique' }}
       />
     </Stack.Navigator>
   );

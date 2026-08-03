@@ -64,6 +64,11 @@ export class NotificationsService {
     return this.emit(NotificationEventType.plan_cancelled, input);
   }
 
+  /** Produit remis après atteinte de l'objectif. */
+  notifyProductHandedOver(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.product_handed_over, input);
+  }
+
   /**
    * Persiste la notification et la dispatch via NotificationPort (SMS + push).
    * Les consommateurs métier préfèrent les helpers typés ci-dessus.
