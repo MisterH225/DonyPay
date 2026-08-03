@@ -6,6 +6,7 @@ Monorepo :
 
 - `backend/` — NestJS + TypeScript + Prisma (PostgreSQL)
 - `mobile/` — React Native (Expo) avec bascule acheteur / vendeur
+- `admin/` — Console Next.js ops (KYC, ledger lecture seule, litiges) — **admin only**
 - `docker-compose.yml` — Postgres local
 
 ## Déploiement Railway
@@ -53,6 +54,11 @@ npm run backend:dev
 # Mobile (autre terminal)
 cp mobile/.env.example mobile/.env
 npm run mobile:start
+
+# Admin (autre terminal, port 3001)
+cp admin/.env.example admin/.env
+# Aligner ADMIN_API_KEY avec backend/.env
+npm run admin:dev
 ```
 
 ## Backend
@@ -68,6 +74,17 @@ API NestJS modulaire (préfixe `/api`) :
 | ledger-adapter | `GET /api/ledger-adapter/hello` — `LedgerPort` (Mock + MobileMoney/CinetPay) |
 | notifications | `GET /api/notifications/hello` — port `NotificationPort`, mock SMS/push |
 | disputes | `GET /api/disputes/hello` — réclamations, PJ, historique, notation |
+| admin | `GET /api/admin/hello` — console ops (`X-Admin-Key`), KYC / ledger / litiges |
+
+### Console admin (`admin/`)
+
+Next.js sur le port `3001`, **hors mobile**. Auth UI (`ADMIN_PASSWORD`) + appels Nest via `ADMIN_API_KEY` (header `X-Admin-Key`, serveur uniquement).
+
+| Zone | Endpoints |
+| --- | --- |
+| KYC | `GET /api/admin/kyc/pending`, `POST .../approve`, `POST .../reject` |
+| Ledger | `GET /api/admin/ledger/accounts`, `.../:id`, `.../:id/entries` (lecture seule) |
+| Litiges | `GET /api/admin/disputes`, `PATCH .../status`, `POST .../messages` |
 
 ### Disputes (réclamations)
 

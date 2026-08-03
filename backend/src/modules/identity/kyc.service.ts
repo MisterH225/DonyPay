@@ -117,6 +117,95 @@ export class KycService {
     };
   }
 
+  /** Liste des dossiers KYC en attente (revue manuelle admin). */
+  async listPendingReviews() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        kycStatus: KycStatus.pending,
+        documents: { some: {} },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        type: true,
+        firstName: true,
+        lastName: true,
+        companyName: true,
+        kycStatus: true,
+        updatedAt: true,
+        documents: {
+          orderBy: { uploadedAt: 'desc' },
+          select: {
+            id: true,
+            type: true,
+            originalName: true,
+            mimeType: true,
+            sizeBytes: true,
+            uploadedAt: true,
+          },
+        },
+      },
+    });
+
+    return users.map((user) => ({
+      userId: user.id,
+      email: user.email,
+      phone: user.phone,
+      type: user.type,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      companyName: user.companyName,
+      status: user.kycStatus,
+      updatedAt: user.updatedAt,
+      documents: user.documents,
+    }));
+  }
+
+  async approveManual(userId: string) {
+    await this.usersService.findById(userId);
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: KycStatus.verified,
+        kycReviewedAt: new Date(),
+        kycRejectReason: null,
+      },
+    });
+
+    return {
+      userId: updated.id,
+      status: updated.kycStatus,
+      reviewedAt: updated.kycReviewedAt,
+      rejectReason: updated.kycRejectReason,
+    };
+  }
+
+  async rejectManual(userId: string, reason: string) {
+    await this.usersService.findById(userId);
+    const trimmed = reason?.trim();
+    if (!trimmed) {
+      throw new BadRequestException('rejectReason is required');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: KycStatus.rejected,
+        kycReviewedAt: new Date(),
+        kycRejectReason: trimmed,
+      },
+    });
+
+    return {
+      userId: updated.id,
+      status: updated.kycStatus,
+      reviewedAt: updated.kycReviewedAt,
+      rejectReason: updated.kycRejectReason,
+    };
+  }
+
   async syncExternalStatus(userId: string) {
     if (!this.kycProvider) {
       throw new ServiceUnavailableException(
