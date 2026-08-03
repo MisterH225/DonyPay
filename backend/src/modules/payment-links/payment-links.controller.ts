@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
-import { MobileMoneyCallbackDto } from './dto/mobile-money-callback.dto';
 import { PaymentLinksService } from './payment-links.service';
 
 @Controller('payment-links')
@@ -13,7 +12,10 @@ export class PaymentLinksController {
     return this.paymentLinksService.getHello();
   }
 
-  /** Crée un lien à usage unique pour une échéance (montant figé, TTL 48h). */
+  /**
+   * Crée un lien à usage unique pour une échéance et initie la collecte
+   * Mobile Money (HMAC webhook) sur le compte ledger du goal.
+   */
   @Post()
   create(@Body() dto: CreatePaymentLinkDto) {
     return this.paymentLinksService.create(dto);
@@ -51,14 +53,5 @@ export class PaymentLinksController {
       .status(200)
       .type('html')
       .send(this.paymentLinksService.renderPublicHtml(page));
-  }
-
-  /** Callback prestataire mobile money. */
-  @Post('public/:token/callback')
-  handleCallback(
-    @Param('token') token: string,
-    @Body() dto: MobileMoneyCallbackDto,
-  ) {
-    return this.paymentLinksService.handleMobileMoneyCallback(token, dto);
   }
 }

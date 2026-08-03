@@ -89,6 +89,15 @@ export type PaymentLinkCreated = {
   expiresAt: string;
   publicUrl: string;
   ttlHours: number;
+  mobileMoneyCollectionId?: string | null;
+  collection?: {
+    id: string;
+    providerRef: string;
+    status: string;
+    ussdHint?: string | null;
+    paymentUrl?: string;
+    sandbox: boolean;
+  };
 };
 
 export type NotificationItem = {

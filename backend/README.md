@@ -81,15 +81,17 @@ Endpoints :
 - Lien à usage unique pour une échéance `schedule` (montant figé)
 - Expiration configurable (`PAYMENT_LINK_TTL_HOURS`, défaut 48h)
 - Page publique sans compte : `GET /api/payment-links/public/:token`
-- Callback mobile money → rattache payeur (nom/numéro/opérateur) à l’échéance
-  puis `LedgerPort.recordDeposit` via `SavingsGoalsService`
+- À la création : `MobileMoneyAdapter.initiateCollection` sur le ledger du goal
+  (`payment_links.mobile_money_collection_id`)
+- Confirmation **uniquement** via webhook CinetPay HMAC
+  (`POST /api/ledger-adapter/mobile-money/webhook`) → crédit ledger puis
+  marquage `PaymentLink` paid + invalidation des autres liens pending
 
 Endpoints :
 
 - `POST /api/payment-links`
 - `GET  /api/payment-links/public/:token` (JSON ou HTML)
 - `GET  /api/payment-links/public/:token/page`
-- `POST /api/payment-links/public/:token/callback`
 
 ## Savings engine
 

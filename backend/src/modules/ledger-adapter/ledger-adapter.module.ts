@@ -16,6 +16,9 @@ import { LEDGER_PORT } from './ports/ledger.port';
  *
  * Les consommateurs métier injectent LEDGER_PORT (mock par défaut).
  * La collecte async s'expose via MobileMoneyAdapter / endpoints mobile-money.
+ *
+ * Pas d’import de PaymentLinksModule ici : le webhook résout
+ * PaymentLinksService via ModuleRef (évite le cycle DI Ledger ↔ PaymentLinks).
  */
 @Module({
   controllers: [LedgerAdapterController, MobileMoneyWebhookController],

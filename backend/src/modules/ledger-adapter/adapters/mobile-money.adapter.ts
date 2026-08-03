@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
 import {
   MobileMoneyCollectionStatus,
   Prisma,
@@ -16,6 +17,8 @@ import {
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { PAYMENT_LINKS_SERVICE } from '../../payment-links/payment-links.tokens';
+import type { PaymentLinksService } from '../../payment-links/payment-links.service';
 import {
   signCinetPayNotify,
   verifyCinetPayHmac,
@@ -65,6 +68,7 @@ export class MobileMoneyAdapter implements LedgerPort {
     private readonly accounting: MockLedgerAdapter,
     @Inject(CINETPAY_CLIENT) private readonly cinetPay: CinetPayClient,
     private readonly config: ConfigService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -303,6 +307,8 @@ export class MobileMoneyAdapter implements LedgerPort {
       },
     });
 
+    await this.completePaymentLinkIfPresent(collection, body, providerRef);
+
     this.logger.log(
       `Collecte confirmée ref=${providerRef} — dépôt ledger account=${collection.accountId} amount=${amount}`,
     );
@@ -312,6 +318,66 @@ export class MobileMoneyAdapter implements LedgerPort {
       status: MobileMoneyCollectionStatus.confirmed,
       ledgerCredited: true,
     };
+  }
+
+  /**
+   * Si la collecte est liée à un PaymentLink (metadata.paymentLinkId),
+   * marque le lien paid et invalide les autres pending de l’échéance.
+   */
+  private async completePaymentLinkIfPresent(
+    collection: MobileMoneyCollection,
+    body: CinetPayWebhookBody,
+    providerRef: string,
+  ): Promise<void> {
+    const metadata = this.asMetadataRecord(collection.metadata);
+    const paymentLinkId = metadata?.paymentLinkId;
+    if (typeof paymentLinkId !== 'string' || !paymentLinkId) {
+      return;
+    }
+
+    const payerPhone = this.resolvePayerPhone(body, collection.phone);
+    const payerOperator =
+      body.payment_method?.trim() ||
+      collection.operator?.trim() ||
+      'MOBILE_MONEY';
+    const payerName =
+      (typeof metadata.payerName === 'string' && metadata.payerName.trim()) ||
+      `Payeur ${payerOperator}`;
+
+    // Résolution lazy via token — évite le cycle Nest LedgerAdapter ↔ PaymentLinks.
+    const paymentLinks = this.moduleRef.get<PaymentLinksService>(
+      PAYMENT_LINKS_SERVICE,
+      { strict: false },
+    );
+
+    await paymentLinks.markPaidFromCollection({
+      paymentLinkId,
+      providerRef,
+      payerName,
+      payerPhone,
+      payerOperator,
+    });
+  }
+
+  private asMetadataRecord(
+    metadata: Prisma.JsonValue | null,
+  ): Record<string, unknown> | null {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return null;
+    }
+    return metadata as Record<string, unknown>;
+  }
+
+  private resolvePayerPhone(
+    body: CinetPayWebhookBody,
+    fallback: string,
+  ): string {
+    const raw = body.cel_phone_num?.trim();
+    if (!raw) return fallback;
+    if (raw.startsWith('+')) return raw;
+    const prefix = body.cpm_phone_prefixe?.replace(/^\+/, '').trim();
+    if (prefix) return `+${prefix}${raw.replace(/^\+/, '')}`;
+    return raw;
   }
 
   /**

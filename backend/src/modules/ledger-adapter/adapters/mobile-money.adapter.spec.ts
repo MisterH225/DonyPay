@@ -1,5 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
 import { LedgerAccountKind, MobileMoneyCollectionStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { signCinetPayNotify } from '../mobile-money/cinetpay-hmac';
@@ -13,6 +14,7 @@ describe('MobileMoneyAdapter', () => {
   let accounting: MockLedgerAdapter;
   let cinetPay: SandboxCinetPayClient;
   let adapter: MobileMoneyAdapter;
+  let paymentLinks: { markPaidFromCollection: jest.Mock };
 
   beforeEach(() => {
     prisma = createInMemoryPrismaFake();
@@ -32,7 +34,20 @@ describe('MobileMoneyAdapter', () => {
       },
     } as unknown as ConfigService;
 
-    adapter = new MobileMoneyAdapter(prisma, accounting, cinetPay, config);
+    paymentLinks = {
+      markPaidFromCollection: jest.fn(async () => undefined),
+    };
+    const moduleRef = {
+      get: jest.fn(() => paymentLinks),
+    } as unknown as ModuleRef;
+
+    adapter = new MobileMoneyAdapter(
+      prisma as unknown as PrismaService,
+      accounting,
+      cinetPay,
+      config,
+      moduleRef,
+    );
   });
 
   it('implémente LedgerPort (délégation comptable)', async () => {
@@ -160,5 +175,30 @@ describe('MobileMoneyAdapter', () => {
 
     expect(second.ledgerCredited).toBe(false);
     expect(await adapter.getBalance(accountId)).toBe(800);
+  });
+
+  it('après dépôt, marque le PaymentLink si metadata.paymentLinkId', async () => {
+    const accountId = await adapter.openSavingsAccount('user-5');
+    const initiated = await adapter.initiateCollection({
+      accountId,
+      amount: 1200,
+      phone: '+2250700112233',
+      operator: 'OM',
+      metadata: {
+        paymentLinkId: 'link-delegated-1',
+        payerName: 'Tiers Payeur',
+      },
+    });
+
+    await adapter.simulateSandboxCallback(initiated.providerRef, true);
+
+    expect(paymentLinks.markPaidFromCollection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentLinkId: 'link-delegated-1',
+        providerRef: initiated.providerRef,
+        payerName: 'Tiers Payeur',
+        payerOperator: 'OM',
+      }),
+    );
   });
 });

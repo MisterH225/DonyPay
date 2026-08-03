@@ -208,6 +208,8 @@ model MobileMoneyCollection {
   createdAt     DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  paymentLink PaymentLink?
+
   @@index([accountId, status])
   @@index([status, createdAt])
   @@map("mobile_money_collections")
@@ -313,20 +315,22 @@ enum PaymentLinkStatus {
 
 /// Lien de paiement à usage unique pour une échéance précise.
 model PaymentLink {
-  id            String            @id @default(uuid())
-  token         String            @unique
-  installmentId String            @map("installment_id")
-  installment   SavingsInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
-  amount        Decimal           @db.Decimal(18, 2)
-  status        PaymentLinkStatus @default(pending)
-  expiresAt     DateTime          @map("expires_at") @db.Timestamptz(6)
-  usedAt        DateTime?         @map("used_at") @db.Timestamptz(6)
-  payerName     String?           @map("payer_name")
-  payerPhone    String?           @map("payer_phone")
-  payerOperator String?           @map("payer_operator")
-  providerRef   String?           @map("provider_ref")
-  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                      String            @id @default(uuid())
+  token                   String            @unique
+  installmentId           String            @map("installment_id")
+  installment             SavingsInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  amount                  Decimal           @db.Decimal(18, 2)
+  status                  PaymentLinkStatus @default(pending)
+  expiresAt               DateTime          @map("expires_at") @db.Timestamptz(6)
+  usedAt                  DateTime?         @map("used_at") @db.Timestamptz(6)
+  payerName               String?           @map("payer_name")
+  payerPhone              String?           @map("payer_phone")
+  payerOperator           String?           @map("payer_operator")
+  providerRef             String?           @map("provider_ref")
+  mobileMoneyCollectionId String?           @unique @map("mobile_money_collection_id")
+  mobileMoneyCollection   MobileMoneyCollection? @relation(fields: [mobileMoneyCollectionId], references: [id], onDelete: SetNull)
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   disputes Dispute[]
 
