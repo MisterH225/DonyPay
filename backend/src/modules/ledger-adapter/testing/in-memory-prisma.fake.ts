@@ -23,9 +23,11 @@ export function createInMemoryPrismaFake() {
   const collections: CollectionRow[] = [];
   let clock = Date.now();
   let seq = 0;
+  let entrySequence = 0;
 
   const nextDate = () => new Date(++clock);
   const nextId = () => `id-${String(++seq).padStart(6, '0')}`;
+  const nextEntrySequence = () => ++entrySequence;
 
   const api = {
     ledgerAccount: {
@@ -79,6 +81,7 @@ export function createInMemoryPrismaFake() {
           amount: new Prisma.Decimal(data.amount),
           balanceAfter: new Prisma.Decimal(data.balanceAfter),
           metadata: (data.metadata as Prisma.JsonValue) ?? null,
+          sequence: nextEntrySequence(),
           createdAt: nextDate(),
         };
         entries.push(row);
@@ -90,7 +93,11 @@ export function createInMemoryPrismaFake() {
         select,
       }: {
         where: { accountId: string };
-        orderBy?: Array<{ createdAt?: 'asc' | 'desc'; id?: 'asc' | 'desc' }>;
+        orderBy?: Array<{
+          createdAt?: 'asc' | 'desc';
+          id?: 'asc' | 'desc';
+          sequence?: 'asc' | 'desc';
+        }>;
         select?: { balanceAfter?: true };
       }) {
         const filtered = entries.filter(
@@ -99,6 +106,12 @@ export function createInMemoryPrismaFake() {
 
         filtered.sort((a, b) => {
           for (const rule of orderBy ?? []) {
+            if (rule.sequence) {
+              const delta = a.sequence - b.sequence;
+              if (delta !== 0) {
+                return rule.sequence === 'desc' ? -delta : delta;
+              }
+            }
             if (rule.createdAt) {
               const delta = a.createdAt.getTime() - b.createdAt.getTime();
               if (delta !== 0) {
@@ -198,7 +211,12 @@ export function createInMemoryPrismaFake() {
         return row;
       },
     },
-    async $transaction<T>(fn: (tx: typeof api) => Promise<T>): Promise<T> {
+    async $transaction<T>(
+      fn: (tx: typeof api) => Promise<T>,
+      _options?: {
+        isolationLevel?: Prisma.TransactionIsolationLevel;
+      },
+    ): Promise<T> {
       return fn(api);
     },
     _accounts: accounts,

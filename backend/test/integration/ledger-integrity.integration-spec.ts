@@ -115,7 +115,7 @@ describe('Ledger integrity (integration)', () => {
 
     const entries = await prisma.ledgerEntry.findMany({
       where: { accountId },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      orderBy: [{ sequence: 'asc' }],
     });
 
     expect(entries.length).toBeGreaterThan(0);
