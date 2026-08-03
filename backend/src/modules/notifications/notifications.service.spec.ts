@@ -123,6 +123,16 @@ describe('NotificationsService', () => {
       NotificationEventType.plan_cancelled,
     ],
     [
+      'refund_initiated',
+      () =>
+        service.notifyRefundInitiated({
+          userId: 'buyer-1',
+          title: 'Remboursement',
+          body: 'En cours',
+        }),
+      NotificationEventType.refund_initiated,
+    ],
+    [
       'product_handed_over',
       () =>
         service.notifyProductHandedOver({

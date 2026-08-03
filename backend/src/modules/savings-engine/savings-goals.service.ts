@@ -19,6 +19,9 @@ import { NotificationsService } from '../notifications';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { RecordDepositDto } from './dto/record-deposit.dto';
 
+/** Délai indicatif de crédit Mobile Money après libération ledger. */
+const MOBILE_MONEY_REFUND_ETA = '24 à 72 heures';
+
 type GoalWithRelations = SavingsGoal & {
   installments: SavingsInstallment[];
   product: Product & {
@@ -310,6 +313,31 @@ export class SavingsGoalsService {
       );
     }
 
+    const refundAmount = goal.savedAmount;
+    const hasRefund = refundAmount.greaterThan(0);
+
+    // Libérer les fonds avant toute mutation de statut.
+    if (hasRefund) {
+      await this.ledger.recordWithdrawal(
+        goal.ledgerAccountId,
+        refundAmount.toNumber(),
+      );
+
+      await this.notifications.notifyRefundInitiated({
+        userId: goal.userId,
+        phone: goal.user?.phone,
+        title: 'Remboursement en cours',
+        body: `Remboursement de ${refundAmount.toString()} XOF initié pour « ${goal.product.name} ». Le crédit Mobile Money est estimé sous ${MOBILE_MONEY_REFUND_ETA}.`,
+        metadata: {
+          goalId: goal.id,
+          productId: goal.productId,
+          amount: refundAmount.toString(),
+          estimatedDelay: MOBILE_MONEY_REFUND_ETA,
+          channel: 'mobile_money',
+        },
+      });
+    }
+
     const updated = await this.prisma.savingsGoal.update({
       where: { id: goalId },
       data: {
@@ -340,6 +368,7 @@ export class SavingsGoalsService {
       metadata: {
         goalId: updated.id,
         productId: updated.productId,
+        refundAmount: hasRefund ? refundAmount.toString() : '0',
       },
     });
 
