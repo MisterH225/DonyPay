@@ -10,12 +10,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DisputeStatus } from '@prisma/client';
+import { Public } from '../auth/decorators/public.decorator';
 import { UpdateDisputeStatusDto } from '../disputes/dto/update-dispute-status.dto';
 import { AdminService } from './admin.service';
 import { AdminDisputeMessageDto } from './dto/admin-dispute-message.dto';
 import { RejectKycDto } from './dto/reject-kyc.dto';
 import { AdminApiKeyGuard } from './guards/admin-api-key.guard';
 
+/** Admin : `@Public()` pour bypass JWT — auth via `AdminApiKeyGuard`. */
+@Public()
 @Controller('admin')
 @UseGuards(AdminApiKeyGuard)
 export class AdminController {

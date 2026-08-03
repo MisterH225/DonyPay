@@ -36,11 +36,16 @@ export class SavingsGoalsService {
   ) {}
 
   async create(dto: CreateSavingsGoalDto): Promise<GoalWithRelations> {
+    if (!dto.userId) {
+      throw new BadRequestException('userId is required');
+    }
+    const userId = dto.userId;
+
     const user = await this.prisma.user.findUnique({
-      where: { id: dto.userId },
+      where: { id: userId },
     });
     if (!user) {
-      throw new NotFoundException(`User ${dto.userId} not found`);
+      throw new NotFoundException(`User ${userId} not found`);
     }
 
     const product = await this.prisma.product.findUnique({
@@ -54,11 +59,11 @@ export class SavingsGoalsService {
     const targetAmount = product.price;
     this.assertModeConfig(dto, targetAmount);
 
-    const ledgerAccountId = await this.ledger.openSavingsAccount(dto.userId);
+    const ledgerAccountId = await this.ledger.openSavingsAccount(userId);
 
     const goal = await this.prisma.savingsGoal.create({
       data: {
-        userId: dto.userId,
+        userId,
         productId: dto.productId,
         mode: dto.mode,
         targetAmount,

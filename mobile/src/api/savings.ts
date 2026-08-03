@@ -1,14 +1,12 @@
 import { apiRequest } from './client';
 import type { SavingsGoal } from './types';
 
-export function listGoals(userId: string) {
-  return apiRequest<SavingsGoal[]>(`/savings-engine/users/${userId}/goals`);
+export function listGoals(_userId?: string) {
+  return apiRequest<SavingsGoal[]>('/savings-engine/users/me/goals');
 }
 
-export function listSellerGoals(sellerId: string) {
-  return apiRequest<SavingsGoal[]>(
-    `/savings-engine/sellers/${sellerId}/goals`,
-  );
+export function listSellerGoals(_sellerId?: string) {
+  return apiRequest<SavingsGoal[]>('/savings-engine/sellers/me/goals');
 }
 
 export function getGoal(goalId: string) {
@@ -16,16 +14,17 @@ export function getGoal(goalId: string) {
 }
 
 export function createGoal(input: {
-  userId: string;
   productId: string;
   mode: 'schedule' | 'flexi';
+  userId?: string;
   installments?: Array<{ dueDate: string; amount: number }>;
   flexiStartsAt?: string;
   flexiEndsAt?: string;
 }) {
+  const { userId: _userId, ...body } = input;
   return apiRequest<SavingsGoal>('/savings-engine/goals', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   });
 }
 
@@ -39,12 +38,9 @@ export function recordDeposit(
   });
 }
 
-export function confirmHandover(goalId: string, sellerId: string) {
+export function confirmHandover(goalId: string, _sellerId?: string) {
   return apiRequest<SavingsGoal>(
     `/savings-engine/goals/${goalId}/confirm-handover`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ sellerId }),
-    },
+    { method: 'POST' },
   );
 }

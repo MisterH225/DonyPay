@@ -2,14 +2,14 @@ import {
   Body,
   Controller,
   Get,
-  Param,
-  ParseUUIDPipe,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { ConfirmTotpDto } from './dto/confirm-totp.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Verify2faDto } from './dto/verify-2fa.dto';
@@ -39,33 +39,36 @@ export class IdentityController {
     private readonly twoFactorService: TwoFactorService,
   ) {}
 
+  @Public()
   @Get('hello')
   getHello() {
     return this.identityService.getHello();
   }
 
+  /** Inscription — ouverte (pas encore de JWT). */
+  @Public()
   @Post('users')
   createUser(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
-  @Get('users/:id')
-  getUser(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.findById(id);
+  @Get('me')
+  getMe(@CurrentUser('userId') userId: string) {
+    return this.usersService.findById(userId);
   }
 
-  @Get('users/:id/kyc')
-  getKycStatus(@Param('id', ParseUUIDPipe) id: string) {
-    return this.kycService.getStatus(id);
+  @Get('me/kyc')
+  getKycStatus(@CurrentUser('userId') userId: string) {
+    return this.kycService.getStatus(userId);
   }
 
-  @Post('users/:id/documents/identity')
+  @Post('me/documents/identity')
   @UseInterceptors(FileInterceptor('file', uploadOptions))
   uploadIdentityDocument(
-    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @UploadedFile() file: UploadedMulterFile,
   ) {
-    return this.kycService.uploadIdentityDocument(id, {
+    return this.kycService.uploadIdentityDocument(userId, {
       buffer: file.buffer,
       originalName: file.originalname,
       mimeType: file.mimetype,
@@ -73,13 +76,13 @@ export class IdentityController {
     });
   }
 
-  @Post('users/:id/documents/address')
+  @Post('me/documents/address')
   @UseInterceptors(FileInterceptor('file', uploadOptions))
   uploadProofOfAddress(
-    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @UploadedFile() file: UploadedMulterFile,
   ) {
-    return this.kycService.uploadProofOfAddress(id, {
+    return this.kycService.uploadProofOfAddress(userId, {
       buffer: file.buffer,
       originalName: file.originalname,
       mimeType: file.mimetype,
@@ -87,41 +90,44 @@ export class IdentityController {
     });
   }
 
-  @Post('users/:id/kyc/submit')
-  submitKyc(@Param('id', ParseUUIDPipe) id: string) {
-    return this.kycService.submitToExternalProvider(id);
+  @Post('me/kyc/submit')
+  submitKyc(@CurrentUser('userId') userId: string) {
+    return this.kycService.submitToExternalProvider(userId);
   }
 
-  @Post('users/:id/kyc/sync')
-  syncKyc(@Param('id', ParseUUIDPipe) id: string) {
-    return this.kycService.syncExternalStatus(id);
+  @Post('me/kyc/sync')
+  syncKyc(@CurrentUser('userId') userId: string) {
+    return this.kycService.syncExternalStatus(userId);
   }
 
-  @Post('users/:id/2fa/totp/setup')
-  setupTotp(@Param('id', ParseUUIDPipe) id: string) {
-    return this.twoFactorService.setupTotp(id);
+  @Post('me/2fa/totp/setup')
+  setupTotp(@CurrentUser('userId') userId: string) {
+    return this.twoFactorService.setupTotp(userId);
   }
 
-  @Post('users/:id/2fa/totp/confirm')
+  @Post('me/2fa/totp/confirm')
   confirmTotp(
-    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('userId') userId: string,
     @Body() dto: ConfirmTotpDto,
   ) {
-    return this.twoFactorService.confirmTotp(id, dto.code);
+    return this.twoFactorService.confirmTotp(userId, dto.code);
   }
 
-  @Post('users/:id/2fa/sms/enable')
-  enableSms(@Param('id', ParseUUIDPipe) id: string) {
-    return this.twoFactorService.enableSms(id);
+  @Post('me/2fa/sms/enable')
+  enableSms(@CurrentUser('userId') userId: string) {
+    return this.twoFactorService.enableSms(userId);
   }
 
-  @Post('users/:id/2fa/sms/send-code')
-  sendSmsCode(@Param('id', ParseUUIDPipe) id: string) {
-    return this.twoFactorService.sendSmsCode(id);
+  @Post('me/2fa/sms/send-code')
+  sendSmsCode(@CurrentUser('userId') userId: string) {
+    return this.twoFactorService.sendSmsCode(userId);
   }
 
-  @Post('users/:id/2fa/verify')
-  verify2fa(@Param('id', ParseUUIDPipe) id: string, @Body() dto: Verify2faDto) {
-    return this.twoFactorService.verify(id, dto.code);
+  @Post('me/2fa/verify')
+  verify2fa(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: Verify2faDto,
+  ) {
+    return this.twoFactorService.verify(userId, dto.code);
   }
 }

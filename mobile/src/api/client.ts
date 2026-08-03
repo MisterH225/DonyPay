@@ -1,4 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const DEFAULT_API_URL = 'http://localhost:3000/api';
+export const ACCESS_TOKEN_KEY = 'donypay.accessToken';
 
 export function getApiBaseUrl(): string {
   return (process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL).replace(/\/$/, '');
@@ -28,12 +31,20 @@ async function parseBody(response: Response): Promise<unknown> {
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
+  options?: { skipAuth?: boolean },
 ): Promise<T> {
   const url = `${getApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
   const headers = new Headers(init.headers);
 
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  if (!options?.skipAuth && !headers.has('Authorization')) {
+    const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
   }
 
   const response = await fetch(url, { ...init, headers });

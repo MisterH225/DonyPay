@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { Public } from '../auth/decorators/public.decorator';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 import { MobileMoneyCallbackDto } from './dto/mobile-money-callback.dto';
 import { PaymentLinksService } from './payment-links.service';
@@ -8,6 +9,7 @@ import { PaymentLinksService } from './payment-links.service';
 export class PaymentLinksController {
   constructor(private readonly paymentLinksService: PaymentLinksService) {}
 
+  @Public()
   @Get('hello')
   getHello() {
     return this.paymentLinksService.getHello();
@@ -23,6 +25,7 @@ export class PaymentLinksController {
    * Page / payload public sans compte.
    * `Accept: text/html` → HTML minimal, sinon JSON.
    */
+  @Public()
   @Get('public/:token')
   async getPublic(
     @Param('token') token: string,
@@ -44,6 +47,7 @@ export class PaymentLinksController {
   }
 
   /** Alias HTML explicite pour ouverture navigateur. */
+  @Public()
   @Get('public/:token/page')
   async getPublicHtmlPage(@Param('token') token: string, @Res() res: Response) {
     const page = await this.paymentLinksService.getPublicPage(token);
@@ -53,7 +57,8 @@ export class PaymentLinksController {
       .send(this.paymentLinksService.renderPublicHtml(page));
   }
 
-  /** Callback prestataire mobile money. */
+  /** Callback prestataire mobile money (legacy — préférer webhook HMAC). */
+  @Public()
   @Post('public/:token/callback')
   handleCallback(
     @Param('token') token: string,
