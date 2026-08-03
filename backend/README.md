@@ -26,6 +26,14 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
+## Ledger (`ledger_entries`)
+
+- Append-only : triggers anti `UPDATE`/`DELETE` + privilèges SQL
+- Rôle applicatif `donypay_app` : `GRANT SELECT, INSERT` uniquement
+- `UPDATE`/`DELETE` révoqués pour `donypay_app`, `anon`, `authenticated`, `service_role`, etc.
+- Toute correction = écriture compensatoire (nouvelle ligne), jamais une modification
+- Migration : `20260803060000_ledger_entries_revoke_update_delete`
+
 ## Payment links
 
 - Lien à usage unique pour une échéance `schedule` (montant figé)
