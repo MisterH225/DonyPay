@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRole } from '../context/RoleContext';
 import type { UserRole } from '../types/role';
+import { colors } from '../theme/colors';
 
 const OPTIONS: { role: UserRole; label: string }[] = [
   { role: 'buyer', label: 'Acheteur' },
@@ -34,7 +35,7 @@ export function RoleToggle() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#E8EEF5',
+    backgroundColor: colors.accentSoft,
     borderRadius: 10,
     padding: 4,
   },
@@ -45,14 +46,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   optionActive: {
-    backgroundColor: '#0B3D5C',
+    backgroundColor: colors.accent,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3A4A58',
+    color: colors.ink,
   },
   labelActive: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

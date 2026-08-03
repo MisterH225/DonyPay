@@ -2,10 +2,11 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BuyerHomeScreen } from '../screens/buyer/BuyerHomeScreen';
 import { BuyerPaymentsScreen } from '../screens/buyer/BuyerPaymentsScreen';
+import { colors } from '../theme/colors';
 
 export type BuyerTabParamList = {
-  BuyerHome: undefined;
-  BuyerPayments: undefined;
+  Accueil: undefined;
+  Paiements: undefined;
 };
 
 const Tab = createBottomTabNavigator<BuyerTabParamList>();
@@ -15,16 +16,21 @@ export function BuyerNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#0B3D5C',
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: {
+          backgroundColor: colors.white,
+          borderTopColor: colors.line,
+        },
       }}
     >
       <Tab.Screen
-        name="BuyerHome"
+        name="Accueil"
         component={BuyerHomeScreen}
         options={{ title: 'Accueil' }}
       />
       <Tab.Screen
-        name="BuyerPayments"
+        name="Paiements"
         component={BuyerPaymentsScreen}
         options={{ title: 'Paiements' }}
       />

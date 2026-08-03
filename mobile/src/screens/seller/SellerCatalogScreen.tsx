@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../../theme/colors';
 
 export function SellerCatalogScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mon catalogue</Text>
-      <Text style={styles.subtitle}>Hello from seller catalog</Text>
+      <Text style={styles.subtitle}>Produits et QR DôniPay.</Text>
     </View>
   );
 }
@@ -15,16 +16,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#F8F5F0',
+    backgroundColor: colors.bgSoft,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2F4A3A',
+    color: colors.sellerInk,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#5A6B5F',
+    color: colors.muted,
   },
 });

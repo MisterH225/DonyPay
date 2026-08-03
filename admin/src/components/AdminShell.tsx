@@ -23,8 +23,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <p className="brand">DonyPay</p>
-        <p className="brand-sub">Console admin — ops uniquement</p>
+        <div className="brand-lockup">
+          <img
+            src="/brand/logo-full.png"
+            alt="DôniPay"
+            width={180}
+            height={43}
+          />
+          <p className="brand-sub">Console admin — ops uniquement</p>
+        </div>
         <nav className="nav">
           {LINKS.map((link) => {
             const active =
@@ -43,7 +50,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div style={{ marginTop: 28 }}>
-          <button type="button" className="btn secondary" onClick={() => void logout()}>
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => void logout()}
+          >
             Déconnexion
           </button>
         </div>

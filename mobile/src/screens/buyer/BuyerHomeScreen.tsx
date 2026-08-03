@@ -1,13 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { BrandLogo } from '../../components/BrandLogo';
 import { RoleToggle } from '../../components/RoleToggle';
+import { colors } from '../../theme/colors';
 
 export function BuyerHomeScreen() {
   return (
     <View style={styles.container}>
+      <BrandLogo variant="full" height={56} />
       <RoleToggle />
       <Text style={styles.title}>Espace acheteur</Text>
-      <Text style={styles.subtitle}>Hello from buyer home</Text>
+      <Text style={styles.subtitle}>
+        Épargne flexible, paiements délégués — DôniPay.
+      </Text>
     </View>
   );
 }
@@ -18,15 +23,16 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
     justifyContent: 'center',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: colors.bg,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0B3D5C',
+    color: colors.ink,
   },
   subtitle: {
     fontSize: 16,
-    color: '#4A6070',
+    color: colors.muted,
+    lineHeight: 22,
   },
 });

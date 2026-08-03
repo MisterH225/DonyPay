@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SellerHomeScreen } from '../screens/seller/SellerHomeScreen';
 import { SellerCatalogScreen } from '../screens/seller/SellerCatalogScreen';
+import { colors } from '../theme/colors';
 
 export type SellerTabParamList = {
   SellerHome: undefined;
@@ -15,7 +16,12 @@ export function SellerNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2F4A3A',
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: {
+          backgroundColor: colors.white,
+          borderTopColor: colors.line,
+        },
       }}
     >
       <Tab.Screen

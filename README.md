@@ -1,6 +1,6 @@
-# DonyPay
+# DôniPay
 
-Application Buy Now Pay Later avec scoring utilisateur.
+Application Buy Now Pay Later — **paiement flexible** (marque : blanc + violet `#6D28D9`).
 
 Monorepo :
 

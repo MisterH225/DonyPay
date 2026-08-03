@@ -38,9 +38,13 @@ export function LoginForm() {
     <div className="login-wrap">
       <form className="card login-card stack" onSubmit={onSubmit}>
         <div>
-          <h1 className="page-title" style={{ fontSize: 30 }}>
-            DonyPay Admin
-          </h1>
+          <img
+            className="login-logo"
+            src="/brand/logo-full.png"
+            alt="DôniPay"
+            width={260}
+            height={62}
+          />
           <p className="page-sub" style={{ marginBottom: 0 }}>
             Accès réservé aux opérateurs. Non disponible aux utilisateurs
             finaux.

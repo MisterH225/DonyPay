@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../../theme/colors';
 
 export function BuyerPaymentsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mes paiements</Text>
-      <Text style={styles.subtitle}>Hello from buyer payments</Text>
+      <Text style={styles.subtitle}>Suivi des échéances et liens délégués.</Text>
     </View>
   );
 }
@@ -15,16 +16,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: colors.bg,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0B3D5C',
+    color: colors.ink,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#4A6070',
+    color: colors.muted,
   },
 });
