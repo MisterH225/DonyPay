@@ -24,8 +24,10 @@ export class ScheduleInstallmentDto {
 }
 
 export class CreateSavingsGoalDto {
+  /** Ignoré si JWT présent — forcé depuis `@CurrentUser()`. */
+  @IsOptional()
   @IsUUID()
-  userId!: string;
+  userId?: string;
 
   @IsUUID()
   productId!: string;

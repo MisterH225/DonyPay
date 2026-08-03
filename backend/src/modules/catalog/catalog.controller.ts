@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreateShopDto } from './dto/create-shop.dto';
@@ -36,14 +38,18 @@ export class CatalogController {
     private readonly productsService: ProductsService,
   ) {}
 
+  @Public()
   @Get('hello')
   getHello() {
     return this.catalogService.getHello();
   }
 
   @Post('shops')
-  createShop(@Body() dto: CreateShopDto) {
-    return this.shopsService.create(dto);
+  createShop(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CreateShopDto,
+  ) {
+    return this.shopsService.create({ ...dto, sellerId: userId });
   }
 
   @Get('shops/:id')
@@ -51,9 +57,9 @@ export class CatalogController {
     return this.shopsService.findById(id);
   }
 
-  @Get('sellers/:sellerId/shop')
-  getShopBySeller(@Param('sellerId', ParseUUIDPipe) sellerId: string) {
-    return this.shopsService.findBySellerId(sellerId);
+  @Get('sellers/me/shop')
+  getMyShop(@CurrentUser('userId') userId: string) {
+    return this.shopsService.findBySellerId(userId);
   }
 
   @Post('shops/:shopId/products')

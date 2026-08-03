@@ -8,33 +8,42 @@ export function createUser(input: {
   firstName?: string;
   lastName?: string;
 }) {
-  return apiRequest<User>('/identity/users', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+  return apiRequest<User>(
+    '/identity/users',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+    { skipAuth: true },
+  );
 }
 
-export function getUser(userId: string) {
-  return apiRequest<User>(`/identity/users/${userId}`);
+export function getMe() {
+  return apiRequest<User>('/identity/me');
 }
 
-export function getKycStatus(userId: string) {
-  return apiRequest<KycStatus>(`/identity/users/${userId}/kyc`);
+/** @deprecated Utiliser getMe() — conservé pour compat. */
+export function getUser(_userId?: string) {
+  return getMe();
+}
+
+export function getKycStatus(_userId?: string) {
+  return apiRequest<KycStatus>('/identity/me/kyc');
 }
 
 export function uploadIdentityDocument(
-  userId: string,
+  _userId: string | undefined,
   file: { uri: string; name: string; type: string },
 ) {
-  return apiUpload(`/identity/users/${userId}/documents/identity`, file);
+  return apiUpload('/identity/me/documents/identity', file);
 }
 
 /** Selfie : backend n'a pas encore de type dédié — on utilise proof_of_address. */
 export function uploadSelfieDocument(
-  userId: string,
+  _userId: string | undefined,
   file: { uri: string; name: string; type: string },
 ) {
-  return apiUpload(`/identity/users/${userId}/documents/address`, {
+  return apiUpload('/identity/me/documents/address', {
     ...file,
     name: file.name.startsWith('selfie') ? file.name : `selfie-${file.name}`,
   });

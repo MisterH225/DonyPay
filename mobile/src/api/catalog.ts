@@ -1,11 +1,7 @@
 import { apiMultipart, apiRequest } from './client';
 import type { Product, Shop } from './types';
 
-export function createShop(input: {
-  sellerId: string;
-  name: string;
-  description?: string;
-}) {
+export function createShop(input: { name: string; description?: string }) {
   return apiRequest<Shop>('/catalog/shops', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -16,8 +12,13 @@ export function getShop(shopId: string) {
   return apiRequest<Shop>(`/catalog/shops/${shopId}`);
 }
 
-export function getShopBySeller(sellerId: string) {
-  return apiRequest<Shop>(`/catalog/sellers/${sellerId}/shop`);
+export function getMyShop() {
+  return apiRequest<Shop>('/catalog/sellers/me/shop');
+}
+
+/** @deprecated Utiliser getMyShop(). */
+export function getShopBySeller(_sellerId?: string) {
+  return getMyShop();
 }
 
 export function getProduct(productId: string) {

@@ -63,7 +63,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (!userId) throw new Error('Session vendeur indisponible');
       if (shop) return shop;
       const created = await createShop({
-        sellerId: userId,
         name: input.name,
         description: input.description,
       });

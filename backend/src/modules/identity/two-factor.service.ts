@@ -135,6 +135,8 @@ export class TwoFactorService {
       method: TwoFactorMethod.sms,
       expiresAt,
       message: 'SMS code sent',
+      // Staging / local uniquement — jamais en production.
+      ...(process.env.NODE_ENV !== 'production' ? { debugCode: code } : {}),
     };
   }
 

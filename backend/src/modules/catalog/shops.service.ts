@@ -11,24 +11,25 @@ import { CreateShopDto } from './dto/create-shop.dto';
 export class ShopsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateShopDto): Promise<Shop> {
+  async create(dto: CreateShopDto & { sellerId: string }): Promise<Shop> {
+    const sellerId = dto.sellerId;
     const seller = await this.prisma.user.findUnique({
-      where: { id: dto.sellerId },
+      where: { id: sellerId },
     });
     if (!seller) {
-      throw new NotFoundException(`Seller ${dto.sellerId} not found`);
+      throw new NotFoundException(`Seller ${sellerId} not found`);
     }
 
     const existing = await this.prisma.shop.findUnique({
-      where: { sellerId: dto.sellerId },
+      where: { sellerId },
     });
     if (existing) {
-      throw new ConflictException(`Seller ${dto.sellerId} already owns a shop`);
+      throw new ConflictException(`Seller ${sellerId} already owns a shop`);
     }
 
     return this.prisma.shop.create({
       data: {
-        sellerId: dto.sellerId,
+        sellerId,
         name: dto.name,
         description: dto.description,
       },

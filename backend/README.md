@@ -19,6 +19,7 @@ npm run prisma:migrate
 
 Chaque module métier expose `GET /api/<module>/hello` :
 
+- auth
 - identity
 - catalog
 - savings-engine
@@ -26,6 +27,23 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - ledger-adapter
 - notifications
 - disputes
+
+## Auth (JWT + OTP)
+
+Pas de mot de passe pour l’instant : login via **email + code OTP** (`TwoFactorService`).
+
+| Endpoint | Accès | Description |
+| --- | --- | --- |
+| `POST /api/auth/enroll/sms` | public | Active SMS 2FA + envoie le code (bootstrap) |
+| `POST /api/auth/otp` | public | Renvoie un OTP (SMS) ou indique TOTP |
+| `POST /api/auth/login` | public | Vérifie OTP → `accessToken` + `refreshToken` |
+| `POST /api/auth/refresh` | public | Renouvelle la paire de tokens |
+
+`JwtAuthGuard` est global (`APP_GUARD`). Routes ouvertes via `@Public()` : health, inscription, pages paiement publiques, webhook CinetPay (HMAC), console admin (`AdminApiKeyGuard`).
+
+L’utilisateur courant s’obtient avec `@CurrentUser()` / `@CurrentUser('userId')` — les routes « soi-même » utilisent `/me` (ex. `GET /api/identity/me/kyc`).
+
+Variables : `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`.
 
 ## Ledger & Mobile Money (CinetPay)
 

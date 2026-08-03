@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { SavingsEngineModule } from './modules/savings-engine/savings-engine.module';
@@ -16,6 +17,7 @@ import { AdminModule } from './modules/admin/admin.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    AuthModule,
     IdentityModule,
     CatalogModule,
     SavingsEngineModule,

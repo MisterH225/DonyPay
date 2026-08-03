@@ -15,18 +15,17 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<User> {
     this.assertProfileFields(dto);
 
+    const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
     if (existing) {
-      throw new ConflictException(
-        `User with email ${dto.email} already exists`,
-      );
+      throw new ConflictException(`User with email ${email} already exists`);
     }
 
     return this.prisma.user.create({
       data: {
-        email: dto.email,
+        email: dto.email.trim().toLowerCase(),
         phone: dto.phone,
         type: dto.type,
         firstName: dto.type === UserType.individual ? dto.firstName : null,
@@ -41,6 +40,16 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User ${id} not found`);
+    }
+    return user;
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
     }
     return user;
   }
