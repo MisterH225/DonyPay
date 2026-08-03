@@ -90,6 +90,8 @@ Statuts : `open` → `in_progress` → `resolved` | `rejected`.
 ```bash
 npm run backend:test
 npm run test:e2e --workspace=backend
+# Intégration (Postgres requis — triggers ledger, paiement délégué)
+npm run test:integration --workspace=backend
 ```
 
 ### Base de données

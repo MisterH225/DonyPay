@@ -10,6 +10,7 @@ Voir le [README racine](../README.md) pour le démarrage du monorepo.
 npm run start:dev
 npm run test
 npm run test:e2e
+npm run test:integration   # Postgres requis (ledger append-only + paiement délégué)
 npm run prisma:generate
 npm run prisma:migrate
 ```
