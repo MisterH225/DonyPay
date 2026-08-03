@@ -6,6 +6,10 @@ export type LedgerMetadata = Record<string, unknown>;
  * Port d'accès au ledger bancaire.
  * Les modules consommateurs injectent uniquement ce contrat (LEDGER_PORT),
  * jamais une implémentation concrète.
+ *
+ * Implémentations :
+ * - MockLedgerAdapter — compta append-only locale (défaut)
+ * - MobileMoneyAdapter — collecte CinetPay (délègue la compta + flux async)
  */
 export interface LedgerPort {
   openSavingsAccount(userId: string): Promise<string>;

@@ -43,7 +43,7 @@ API NestJS modulaire (préfixe `/api`) :
 | catalog | `GET /api/catalog/hello` — boutiques, produits, QR, listing |
 | savings-engine | `GET /api/savings-engine/hello` — objectifs schedule/flexi, dépôts LedgerPort, notif vendeur |
 | payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
-| ledger-adapter | `GET /api/ledger-adapter/hello` |
+| ledger-adapter | `GET /api/ledger-adapter/hello` — `LedgerPort` (Mock + MobileMoney/CinetPay) |
 | notifications | `GET /api/notifications/hello` |
 | disputes | `GET /api/disputes/hello` |
 
