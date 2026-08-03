@@ -71,3 +71,27 @@ export async function apiUpload<T>(
     body: form,
   });
 }
+
+/** Multipart générique (ex. création produit catalogue avec champ `photo`). */
+export async function apiMultipart<T>(
+  path: string,
+  fields: Record<string, string>,
+  file?: { field: string; uri: string; name: string; type: string },
+): Promise<T> {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    form.append(key, value);
+  }
+  if (file) {
+    form.append(file.field, {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as unknown as Blob);
+  }
+
+  return apiRequest<T>(path, {
+    method: 'POST',
+    body: form,
+  });
+}

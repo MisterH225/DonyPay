@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RoleProvider } from './src/context/RoleContext';
 import { SessionProvider } from './src/context/SessionContext';
+import { ShopProvider } from './src/context/ShopContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -10,8 +11,10 @@ export default function App() {
     <SafeAreaProvider>
       <RoleProvider>
         <SessionProvider>
-          <RootNavigator />
-          <StatusBar style="dark" />
+          <ShopProvider>
+            <RootNavigator />
+            <StatusBar style="dark" />
+          </ShopProvider>
         </SessionProvider>
       </RoleProvider>
     </SafeAreaProvider>

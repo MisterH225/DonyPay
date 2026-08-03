@@ -115,6 +115,76 @@ export class SavingsGoalsService {
     });
   }
 
+  /** Plans d'épargne liés aux produits de la boutique du vendeur. */
+  async listBySeller(sellerId: string): Promise<GoalWithRelations[]> {
+    const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
+    if (!seller) {
+      throw new NotFoundException(`Seller ${sellerId} not found`);
+    }
+
+    return this.prisma.savingsGoal.findMany({
+      where: { product: { shop: { sellerId } } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        installments: { orderBy: { sequence: 'asc' } },
+        product: { include: { shop: { include: { seller: true } } } },
+        user: true,
+        deposits: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+  }
+
+  /**
+   * Confirmation vendeur : remise du produit une fois l'objectif atteint.
+   * Débite le ledger d'épargne et passe le goal en `completed`.
+   */
+  async confirmHandover(goalId: string, sellerId: string): Promise<GoalWithRelations> {
+    const goal = await this.findById(goalId);
+
+    if (goal.product.shop.sellerId !== sellerId) {
+      throw new BadRequestException(
+        'Only the product seller can confirm handover',
+      );
+    }
+
+    if (goal.status !== SavingsGoalStatus.ready_for_withdrawal) {
+      throw new BadRequestException(
+        `Cannot confirm handover for goal with status ${goal.status}`,
+      );
+    }
+
+    const amount = goal.savedAmount.toNumber();
+    if (amount > 0) {
+      await this.ledger.recordWithdrawal(goal.ledgerAccountId, amount);
+    }
+
+    const updated = await this.prisma.savingsGoal.update({
+      where: { id: goalId },
+      data: { status: SavingsGoalStatus.completed },
+      include: {
+        installments: { orderBy: { sequence: 'asc' } },
+        product: { include: { shop: { include: { seller: true } } } },
+        user: true,
+        deposits: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
+    await this.notifications.notifyProductHandedOver({
+      userId: updated.userId,
+      phone: updated.user?.phone,
+      title: 'Produit remis',
+      body: `Votre produit « ${updated.product.name} » a été remis par le vendeur.`,
+      metadata: {
+        goalId: updated.id,
+        productId: updated.productId,
+        sellerId,
+        amount: updated.savedAmount.toString(),
+      },
+    });
+
+    return updated;
+  }
+
   async recordDeposit(goalId: string, dto: RecordDepositDto) {
     const goal = await this.findById(goalId);
 

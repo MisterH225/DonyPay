@@ -5,6 +5,12 @@ export function listGoals(userId: string) {
   return apiRequest<SavingsGoal[]>(`/savings-engine/users/${userId}/goals`);
 }
 
+export function listSellerGoals(sellerId: string) {
+  return apiRequest<SavingsGoal[]>(
+    `/savings-engine/sellers/${sellerId}/goals`,
+  );
+}
+
 export function getGoal(goalId: string) {
   return apiRequest<SavingsGoal>(`/savings-engine/goals/${goalId}`);
 }
@@ -31,4 +37,14 @@ export function recordDeposit(
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function confirmHandover(goalId: string, sellerId: string) {
+  return apiRequest<SavingsGoal>(
+    `/savings-engine/goals/${goalId}/confirm-handover`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ sellerId }),
+    },
+  );
 }

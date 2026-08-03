@@ -25,6 +25,15 @@ export type KycStatus = {
   documents: KycDocumentView[];
 };
 
+export type Shop = {
+  id: string;
+  sellerId: string;
+  name: string;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Product = {
   id: string;
   shopId: string;
@@ -32,6 +41,7 @@ export type Product = {
   price: string | number;
   photoKey?: string | null;
   qrPayload: string;
+  qrCodeKey?: string;
 };
 
 export type SavingsInstallment = {
@@ -61,6 +71,7 @@ export type SavingsGoal = {
   createdAt?: string;
   installments?: SavingsInstallment[];
   product?: Product & { shop?: { id: string; name: string; sellerId: string } };
+  user?: Pick<User, 'id' | 'email' | 'phone' | 'firstName' | 'lastName'>;
   deposits?: Array<{
     id: string;
     amount: string | number;

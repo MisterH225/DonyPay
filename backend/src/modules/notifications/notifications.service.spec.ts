@@ -122,6 +122,16 @@ describe('NotificationsService', () => {
         }),
       NotificationEventType.plan_cancelled,
     ],
+    [
+      'product_handed_over',
+      () =>
+        service.notifyProductHandedOver({
+          userId: 'buyer-1',
+          title: 'Remis',
+          body: 'Produit remis',
+        }),
+      NotificationEventType.product_handed_over,
+    ],
   ] as const)('supports trigger %s', async (_name, run, event) => {
     const record = await run();
     expect(record.type).toBe(event);
