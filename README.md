@@ -45,7 +45,29 @@ API NestJS modulaire (préfixe `/api`) :
 | payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
 | ledger-adapter | `GET /api/ledger-adapter/hello` |
 | notifications | `GET /api/notifications/hello` |
-| disputes | `GET /api/disputes/hello` |
+| disputes | `GET /api/disputes/hello` — réclamations, PJ, historique, notation |
+
+### Disputes (réclamations)
+
+Réclamation liée à un **plan d'épargne** (`savings_goal`) ou un **paiement délégué** (`payment_link`).
+
+| Motif | Valeur |
+| --- | --- |
+| Produit non conforme | `non_conforming_product` |
+| Paiement non reçu | `payment_not_received` |
+| Litige payeur tiers | `third_party_payer` |
+
+Statuts : `open` → `in_progress` → `resolved` | `rejected`.
+
+| Endpoint | Description |
+| --- | --- |
+| `POST /api/disputes` | Ouvrir une réclamation (+ premier message) |
+| `GET /api/disputes/:id` | Détail (messages, PJ, notation) |
+| `GET /api/disputes/users/:userId` | Liste des litiges d’un utilisateur |
+| `PATCH /api/disputes/:id/status` | Changer le statut |
+| `POST /api/disputes/:id/messages` | Ajouter un échange |
+| `POST /api/disputes/:id/attachments` | Pièce jointe (`multipart` `file` + `uploadedById`) |
+| `POST /api/disputes/:id/rating` | Notation 1–5 post-résolution uniquement |
 
 ### Tests (Jest)
 
