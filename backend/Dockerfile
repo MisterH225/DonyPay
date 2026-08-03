@@ -37,9 +37,11 @@ COPY --from=build --chown=donypay:donypay /app/node_modules ./node_modules
 COPY --from=build --chown=donypay:donypay /app/backend ./backend
 COPY --from=build --chown=donypay:donypay /app/mobile/package.json ./mobile/package.json
 
+RUN chmod +x /app/backend/scripts/railway-start.sh
+
 USER donypay
 WORKDIR /app/backend
 EXPOSE 3000
 
-# Applique les migrations puis démarre l'API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Migrations puis Nest — écoute 0.0.0.0 (voir main.ts)
+CMD ["sh", "./scripts/railway-start.sh"]
