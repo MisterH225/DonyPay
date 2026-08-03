@@ -227,10 +227,7 @@ export class SavingsGoalsService {
       mode: goal.mode,
     });
 
-    const newSaved = goal.savedAmount.add(amount);
-    const reached = newSaved.greaterThanOrEqualTo(goal.targetAmount);
-
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { updated, reached } = await this.prisma.$transaction(async (tx) => {
       if (installment) {
         await tx.savingsInstallment.update({
           where: { id: installment.id },
@@ -249,15 +246,27 @@ export class SavingsGoalsService {
         },
       });
 
-      return tx.savingsGoal.update({
+      // Incrément atomique côté DB — évite une valeur précalculée hors transaction.
+      await tx.savingsGoal.update({
         where: { id: goal.id },
-        data: {
-          savedAmount: newSaved,
-          status: reached
-            ? SavingsGoalStatus.ready_for_withdrawal
-            : SavingsGoalStatus.active,
-          readyAt: reached ? new Date() : null,
-        },
+        data: { savedAmount: { increment: amount } },
+      });
+
+      const current = await tx.savingsGoal.findUniqueOrThrow({
+        where: { id: goal.id },
+      });
+      const reached = current.savedAmount.greaterThanOrEqualTo(
+        current.targetAmount,
+      );
+
+      const updated = await tx.savingsGoal.update({
+        where: { id: goal.id },
+        data: reached
+          ? {
+              status: SavingsGoalStatus.ready_for_withdrawal,
+              readyAt: new Date(),
+            }
+          : {},
         include: {
           installments: { orderBy: { sequence: 'asc' } },
           product: { include: { shop: { include: { seller: true } } } },
@@ -265,6 +274,8 @@ export class SavingsGoalsService {
           deposits: { orderBy: { createdAt: 'desc' } },
         },
       });
+
+      return { updated, reached };
     });
 
     await this.notifications.notifyDepositReceived({
