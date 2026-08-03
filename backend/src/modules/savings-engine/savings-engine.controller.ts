@@ -46,6 +46,11 @@ export class SavingsEngineController {
     return this.savingsGoalsService.recordDeposit(id, dto);
   }
 
+  @Post('goals/:id/cancel')
+  cancelGoal(@Param('id', ParseUUIDPipe) id: string) {
+    return this.savingsGoalsService.cancel(id);
+  }
+
   @Post('reminders/dispatch')
   dispatchReminders() {
     return this.savingsGoalsService.dispatchDueReminders();
