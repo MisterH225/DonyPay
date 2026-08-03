@@ -18,6 +18,7 @@ describe('SavingsGoalsService', () => {
     notifyGoalReached: jest.Mock;
     notifyInstallmentDue: jest.Mock;
     notifyPlanCancelled: jest.Mock;
+    notifyProductHandedOver: jest.Mock;
   };
   let goal: Record<string, unknown>;
   let installments: Array<Record<string, unknown>>;
@@ -79,6 +80,10 @@ describe('SavingsGoalsService', () => {
       notifyGoalReached: jest.fn(async (dto) => ({ id: 'notif-goal', ...dto })),
       notifyInstallmentDue: jest.fn(async (dto) => ({ id: 'notif-due', ...dto })),
       notifyPlanCancelled: jest.fn(async (dto) => ({ id: 'notif-cancel', ...dto })),
+      notifyProductHandedOver: jest.fn(async (dto) => ({
+        id: 'notif-handover',
+        ...dto,
+      })),
     };
 
     prisma = {
@@ -263,5 +268,36 @@ describe('SavingsGoalsService', () => {
         userId: 'buyer-1',
       }),
     );
+  });
+
+  it('lists goals for a seller boutique', async () => {
+    const listed = await service.listBySeller('seller-1');
+    expect(prisma.savingsGoal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { product: { shop: { sellerId: 'seller-1' } } },
+      }),
+    );
+    expect(listed).toHaveLength(1);
+  });
+
+  it('confirms product handover when goal is ready', async () => {
+    goal.status = SavingsGoalStatus.ready_for_withdrawal;
+    goal.savedAmount = new Prisma.Decimal(100);
+
+    const completed = await service.confirmHandover('goal-1', 'seller-1');
+
+    expect(ledger.recordWithdrawal).toHaveBeenCalledWith('ledger-acc-1', 100);
+    expect(completed.status).toBe(SavingsGoalStatus.completed);
+    expect(notifications.notifyProductHandedOver).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'buyer-1' }),
+    );
+  });
+
+  it('rejects handover for non-owner seller', async () => {
+    goal.status = SavingsGoalStatus.ready_for_withdrawal;
+    await expect(
+      service.confirmHandover('goal-1', 'other-seller'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(ledger.recordWithdrawal).not.toHaveBeenCalled();
   });
 });

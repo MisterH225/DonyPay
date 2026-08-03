@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { ConfirmHandoverDto } from './dto/confirm-handover.dto';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { RecordDepositDto } from './dto/record-deposit.dto';
 import { SavingsEngineService } from './savings-engine.service';
@@ -38,12 +39,25 @@ export class SavingsEngineController {
     return this.savingsGoalsService.listByUser(userId);
   }
 
+  @Get('sellers/:sellerId/goals')
+  listSellerGoals(@Param('sellerId', ParseUUIDPipe) sellerId: string) {
+    return this.savingsGoalsService.listBySeller(sellerId);
+  }
+
   @Post('goals/:id/deposits')
   recordDeposit(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordDepositDto,
   ) {
     return this.savingsGoalsService.recordDeposit(id, dto);
+  }
+
+  @Post('goals/:id/confirm-handover')
+  confirmHandover(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmHandoverDto,
+  ) {
+    return this.savingsGoalsService.confirmHandover(id, dto.sellerId);
   }
 
   @Post('goals/:id/cancel')
