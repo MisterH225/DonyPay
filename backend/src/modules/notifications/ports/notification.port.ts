@@ -21,6 +21,8 @@ export enum NotificationEventType {
   payment_link_paid_by_third_party = 'payment_link_paid_by_third_party',
   /** Plan d'épargne annulé. */
   plan_cancelled = 'plan_cancelled',
+  /** Remboursement initié après annulation (fonds libérés du ledger). */
+  refund_initiated = 'refund_initiated',
   /** Produit remis à l'acheteur (objectif soldé). */
   product_handed_over = 'product_handed_over',
 }

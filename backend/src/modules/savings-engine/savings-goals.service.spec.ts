@@ -18,6 +18,7 @@ describe('SavingsGoalsService', () => {
     notifyGoalReached: jest.Mock;
     notifyInstallmentDue: jest.Mock;
     notifyPlanCancelled: jest.Mock;
+    notifyRefundInitiated: jest.Mock;
     notifyProductHandedOver: jest.Mock;
   };
   let goal: Record<string, unknown>;
@@ -83,6 +84,10 @@ describe('SavingsGoalsService', () => {
       notifyGoalReached: jest.fn(async (dto) => ({ id: 'notif-goal', ...dto })),
       notifyInstallmentDue: jest.fn(async (dto) => ({ id: 'notif-due', ...dto })),
       notifyPlanCancelled: jest.fn(async (dto) => ({ id: 'notif-cancel', ...dto })),
+      notifyRefundInitiated: jest.fn(async (dto) => ({
+        id: 'notif-refund',
+        ...dto,
+      })),
       notifyProductHandedOver: jest.fn(async (dto) => ({
         id: 'notif-handover',
         ...dto,
@@ -279,12 +284,54 @@ describe('SavingsGoalsService', () => {
     expect(notifications.notifyGoalReached).not.toHaveBeenCalled();
   });
 
-  it('cancels a plan and notifies plan_cancelled', async () => {
+  it('cancels a plan with zero balance without ledger withdrawal', async () => {
+    goal.savedAmount = new Prisma.Decimal(0);
+
     const cancelled = await service.cancel('goal-1');
+
     expect(cancelled.status).toBe(SavingsGoalStatus.cancelled);
+    expect(ledger.recordWithdrawal).not.toHaveBeenCalled();
+    expect(notifications.notifyRefundInitiated).not.toHaveBeenCalled();
     expect(notifications.notifyPlanCancelled).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'buyer-1' }),
     );
+  });
+
+  it('refunds saved funds before cancelling and notifies refund + cancel', async () => {
+    goal.savedAmount = new Prisma.Decimal(75);
+
+    const cancelled = await service.cancel('goal-1');
+
+    expect(ledger.recordWithdrawal).toHaveBeenCalledWith('ledger-acc-1', 75);
+    expect(notifications.notifyRefundInitiated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'buyer-1',
+        metadata: expect.objectContaining({
+          amount: '75',
+          estimatedDelay: '24 à 72 heures',
+          channel: 'mobile_money',
+        }),
+      }),
+    );
+    expect(cancelled.status).toBe(SavingsGoalStatus.cancelled);
+    expect(notifications.notifyPlanCancelled).toHaveBeenCalled();
+
+    const withdrawalOrder = ledger.recordWithdrawal.mock.invocationCallOrder[0];
+    const updateOrder = (
+      prisma.savingsGoal as { update: jest.Mock }
+    ).update.mock.invocationCallOrder[0];
+    expect(withdrawalOrder).toBeLessThan(updateOrder);
+  });
+
+  it('does not cancel the goal when ledger withdrawal fails', async () => {
+    goal.savedAmount = new Prisma.Decimal(40);
+    ledger.recordWithdrawal.mockRejectedValueOnce(new Error('ledger down'));
+
+    await expect(service.cancel('goal-1')).rejects.toThrow('ledger down');
+    expect(
+      (prisma.savingsGoal as { update: jest.Mock }).update,
+    ).not.toHaveBeenCalled();
+    expect(notifications.notifyPlanCancelled).not.toHaveBeenCalled();
   });
 
   it('rejects flexi deposits outside the period', async () => {

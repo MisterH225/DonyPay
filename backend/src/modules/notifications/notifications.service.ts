@@ -64,6 +64,11 @@ export class NotificationsService {
     return this.emit(NotificationEventType.plan_cancelled, input);
   }
 
+  /** Remboursement initié (annulation avec solde > 0). */
+  notifyRefundInitiated(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.refund_initiated, input);
+  }
+
   /** Produit remis après atteinte de l'objectif. */
   notifyProductHandedOver(input: EmitNotificationInput) {
     return this.emit(NotificationEventType.product_handed_over, input);
