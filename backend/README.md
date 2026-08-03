@@ -25,3 +25,16 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - ledger-adapter
 - notifications
 - disputes
+
+## Ledger adapter
+
+- Contrat : `LedgerPort` (injecter `LEDGER_PORT`)
+- Implémentation actuelle : `MockLedgerAdapter` (privée au module)
+- Écritures en partie double append-only dans `ledger_entries` (pas d’UPDATE / DELETE)
+- Migration : `prisma/migrations/20260803010000_ledger_append_only`
+
+```ts
+import { LEDGER_PORT, type LedgerPort } from './modules/ledger-adapter';
+
+constructor(@Inject(LEDGER_PORT) private readonly ledger: LedgerPort) {}
+```

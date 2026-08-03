@@ -9,3 +9,40 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum LedgerEntryType {
+  debit
+  credit
+}
+
+enum LedgerAccountKind {
+  savings
+  clearing
+}
+
+/// Compte ledger (épargne utilisateur ou compte de compensation système).
+model LedgerAccount {
+  id        String            @id @default(uuid())
+  userId    String?           @map("user_id")
+  kind      LedgerAccountKind
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  entries   LedgerEntry[]
+
+  @@index([userId])
+  @@map("ledger_accounts")
+}
+
+/// Écritures append-only (jamais d'UPDATE / DELETE).
+model LedgerEntry {
+  id           String          @id @default(uuid())
+  accountId    String          @map("account_id")
+  account      LedgerAccount   @relation(fields: [accountId], references: [id])
+  type         LedgerEntryType
+  amount       Decimal         @db.Decimal(18, 2)
+  balanceAfter Decimal         @map("balance_after") @db.Decimal(18, 2)
+  metadata     Json?
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([accountId, createdAt])
+  @@map("ledger_entries")
+}

@@ -7,7 +7,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { SavingsEngineModule } from './modules/savings-engine/savings-engine.module';
 import { PaymentLinksModule } from './modules/payment-links/payment-links.module';
-import { LedgerAdapterModule } from './modules/ledger-adapter/ledger-adapter.module';
+import { LedgerAdapterModule } from './modules/ledger-adapter';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
 
