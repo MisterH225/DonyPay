@@ -148,11 +148,12 @@ enum LedgerAccountKind {
 
 /// Compte ledger (épargne utilisateur ou compte de compensation système).
 model LedgerAccount {
-  id        String            @id @default(uuid())
-  userId    String?           @map("user_id")
-  kind      LedgerAccountKind
-  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  entries   LedgerEntry[]
+  id                   String                  @id @default(uuid())
+  userId               String?                 @map("user_id")
+  kind                 LedgerAccountKind
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  entries              LedgerEntry[]
+  mobileMoneyCollections MobileMoneyCollection[]
 
   @@index([userId])
   @@map("ledger_accounts")
@@ -171,6 +172,37 @@ model LedgerEntry {
 
   @@index([accountId, createdAt])
   @@map("ledger_entries")
+}
+
+/// Collecte Mobile Money async (CinetPay) — initiation → USSD → webhook HMAC.
+enum MobileMoneyCollectionStatus {
+  pending
+  ussd_sent
+  confirmed
+  failed
+}
+
+model MobileMoneyCollection {
+  id            String                      @id @default(uuid())
+  providerRef   String                      @unique @map("provider_ref")
+  accountId     String                      @map("account_id")
+  account       LedgerAccount               @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  amount        Decimal                     @db.Decimal(18, 2)
+  currency      String                      @default("XOF")
+  phone         String
+  operator      String?
+  status        MobileMoneyCollectionStatus @default(pending)
+  description   String?
+  metadata      Json?
+  ussdHint      String?                     @map("ussd_hint")
+  failureReason String?                     @map("failure_reason")
+  confirmedAt   DateTime?                   @map("confirmed_at") @db.Timestamptz(6)
+  createdAt     DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([accountId, status])
+  @@index([status, createdAt])
+  @@map("mobile_money_collections")
 }
 
 // ---------------------------------------------------------------------------

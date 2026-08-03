@@ -26,7 +26,28 @@ Chaque module métier expose `GET /api/<module>/hello` :
 - notifications
 - disputes
 
-<<<<<<< HEAD
+## Ledger & Mobile Money (CinetPay)
+
+Deux implémentations de `LedgerPort` :
+
+| Adaptateur | Rôle |
+| --- | --- |
+| `MockLedgerAdapter` | Compta append-only locale (défaut `LEDGER_PORT`) |
+| `MobileMoneyAdapter` | Collecte async CinetPay sandbox — délègue la compta |
+
+Flux collecte : **initiation → push USSD (sandbox) → webhook HMAC → `recordDeposit`**.
+
+Le webhook exige le header `x-token` (HMAC-SHA256 CinetPay). **Sans signature valide → 401, aucun crédit.**
+
+Endpoints :
+
+- `POST /api/ledger-adapter/mobile-money/collections` — initier une collecte
+- `GET  /api/ledger-adapter/mobile-money/collections/:providerRef`
+- `POST /api/ledger-adapter/mobile-money/webhook` — notification CinetPay (`x-token`)
+- `POST /api/ledger-adapter/mobile-money/sandbox/simulate-callback` — simuler USSD+HMAC (sandbox)
+
+Variables : `CINETPAY_SANDBOX`, `CINETPAY_SITE_ID`, `CINETPAY_SECRET_KEY`, `CINETPAY_NOTIFY_BASE_URL`.
+
 ## Disputes
 
 - Réclamation liée à un plan d'épargne (`savings_goal`) ou un paiement délégué (`payment_link`)
@@ -45,7 +66,7 @@ Endpoints :
 - `POST /api/disputes/:id/messages`
 - `POST /api/disputes/:id/attachments`
 - `POST /api/disputes/:id/rating`
-=======
+
 ## Ledger (`ledger_entries`)
 
 - Append-only : triggers anti `UPDATE`/`DELETE` + privilèges SQL
@@ -53,7 +74,6 @@ Endpoints :
 - `UPDATE`/`DELETE` révoqués pour `donypay_app`, `anon`, `authenticated`, `service_role`, etc.
 - Toute correction = écriture compensatoire (nouvelle ligne), jamais une modification
 - Migration : `20260803060000_ledger_entries_revoke_update_delete`
->>>>>>> origin/main
 
 ## Payment links
 

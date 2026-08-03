@@ -43,9 +43,8 @@ API NestJS modulaire (préfixe `/api`) :
 | catalog | `GET /api/catalog/hello` — boutiques, produits, QR, listing |
 | savings-engine | `GET /api/savings-engine/hello` — objectifs schedule/flexi, dépôts LedgerPort, notif vendeur |
 | payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
-| ledger-adapter | `GET /api/ledger-adapter/hello` |
-<<<<<<< HEAD
-| notifications | `GET /api/notifications/hello` |
+| ledger-adapter | `GET /api/ledger-adapter/hello` — `LedgerPort` (Mock + MobileMoney/CinetPay) |
+| notifications | `GET /api/notifications/hello` — port `NotificationPort`, mock SMS/push |
 | disputes | `GET /api/disputes/hello` — réclamations, PJ, historique, notation |
 
 ### Disputes (réclamations)
@@ -69,10 +68,6 @@ Statuts : `open` → `in_progress` → `resolved` | `rejected`.
 | `POST /api/disputes/:id/messages` | Ajouter un échange |
 | `POST /api/disputes/:id/attachments` | Pièce jointe (`multipart` `file` + `uploadedById`) |
 | `POST /api/disputes/:id/rating` | Notation 1–5 post-résolution uniquement |
-=======
-| notifications | `GET /api/notifications/hello` — port `NotificationPort`, mock SMS/push |
-| disputes | `GET /api/disputes/hello` |
->>>>>>> origin/main
 
 ### Notifications (port découplé)
 
