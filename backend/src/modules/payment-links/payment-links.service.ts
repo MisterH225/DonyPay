@@ -12,6 +12,7 @@ import {
   type PaymentLink,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications';
 import { SavingsGoalsService } from '../savings-engine/savings-goals.service';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 import { MobileMoneyCallbackDto } from './dto/mobile-money-callback.dto';
@@ -34,6 +35,7 @@ export class PaymentLinksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly savingsGoals: SavingsGoalsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   getHello(): { module: string; message: string } {
@@ -229,6 +231,29 @@ export class PaymentLinksService {
       }),
     ]);
 
+    const owner = link.installment.goal.user;
+    const isThirdParty =
+      !owner.phone ||
+      this.normalizePhone(dto.payerPhone) !== this.normalizePhone(owner.phone);
+
+    if (isThirdParty) {
+      await this.notifications.notifyPaymentLinkPaidByThirdParty({
+        userId: owner.id,
+        phone: owner.phone,
+        title: 'Lien de paiement réglé par un tiers',
+        body: `${dto.payerName} (${dto.payerOperator}) a payé ${updatedLink.amount.toString()} pour « ${link.installment.goal.product.name} ».`,
+        metadata: {
+          goalId: link.installment.goalId,
+          installmentId: link.installmentId,
+          paymentLinkId: updatedLink.id,
+          payerName: dto.payerName,
+          payerPhone: dto.payerPhone,
+          payerOperator: dto.payerOperator,
+          providerRef: dto.providerRef,
+        },
+      });
+    }
+
     return {
       token: updatedLink.token,
       status: updatedLink.status,
@@ -253,6 +278,7 @@ export class PaymentLinksService {
             goal: {
               include: {
                 product: { include: { shop: true } },
+                user: true,
               },
             },
           },
@@ -302,5 +328,9 @@ export class PaymentLinksService {
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;');
+  }
+
+  private normalizePhone(phone: string): string {
+    return phone.replace(/\s+/g, '').replace(/^\+/, '');
   }
 }

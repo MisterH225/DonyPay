@@ -1,11 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type Notification } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
+import {
+  NOTIFICATION_PORT,
+  NotificationChannel,
+  NotificationEventType,
+  type NotificationPort,
+} from './ports/notification.port';
+
+const DEFAULT_CHANNELS = [NotificationChannel.sms, NotificationChannel.push];
+
+export type EmitNotificationInput = {
+  userId: string;
+  title: string;
+  body: string;
+  phone?: string | null;
+  pushToken?: string | null;
+  metadata?: Record<string, unknown>;
+  channels?: NotificationChannel[];
+};
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(NOTIFICATION_PORT)
+    private readonly notifier: NotificationPort,
+  ) {}
 
   getHello(): { module: string; message: string } {
     return {
@@ -14,17 +36,46 @@ export class NotificationsService {
     };
   }
 
+  /** Versement reçu. */
+  notifyDepositReceived(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.deposit_received, input);
+  }
+
+  /** Objectif atteint. */
+  notifyGoalReached(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.goal_reached, input);
+  }
+
+  /** Échéance à venir. */
+  notifyInstallmentDue(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.installment_due, input);
+  }
+
+  /** Lien de paiement payé par un tiers. */
+  notifyPaymentLinkPaidByThirdParty(input: EmitNotificationInput) {
+    return this.emit(
+      NotificationEventType.payment_link_paid_by_third_party,
+      input,
+    );
+  }
+
+  /** Plan d'épargne annulé. */
+  notifyPlanCancelled(input: EmitNotificationInput) {
+    return this.emit(NotificationEventType.plan_cancelled, input);
+  }
+
+  /**
+   * Persiste la notification et la dispatch via NotificationPort (SMS + push).
+   * Les consommateurs métier préfèrent les helpers typés ci-dessus.
+   */
   async notify(dto: CreateNotificationDto): Promise<Notification> {
-    return this.prisma.notification.create({
-      data: {
-        userId: dto.userId,
-        type: dto.type,
-        title: dto.title,
-        body: dto.body,
-        metadata: (dto.metadata ?? undefined) as
-          | Prisma.InputJsonValue
-          | undefined,
-      },
+    return this.emit(dto.type as NotificationEventType, {
+      userId: dto.userId,
+      title: dto.title,
+      body: dto.body,
+      phone: dto.phone,
+      pushToken: dto.pushToken,
+      metadata: dto.metadata,
     });
   }
 
@@ -47,5 +98,41 @@ export class NotificationsService {
       where: { id },
       data: { readAt: new Date() },
     });
+  }
+
+  private async emit(
+    event: NotificationEventType,
+    input: EmitNotificationInput,
+  ): Promise<Notification> {
+    const channels = input.channels?.length ? input.channels : DEFAULT_CHANNELS;
+
+    const record = await this.prisma.notification.create({
+      data: {
+        userId: input.userId,
+        type: event,
+        title: input.title,
+        body: input.body,
+        metadata: {
+          ...(input.metadata ?? {}),
+          channels,
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    await this.notifier.send({
+      event,
+      userId: input.userId,
+      title: input.title,
+      body: input.body,
+      phone: input.phone,
+      pushToken: input.pushToken,
+      channels,
+      metadata: {
+        ...(input.metadata ?? {}),
+        notificationId: record.id,
+      },
+    });
+
+    return record;
   }
 }

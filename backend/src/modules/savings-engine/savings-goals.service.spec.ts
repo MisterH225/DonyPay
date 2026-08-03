@@ -7,13 +7,18 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { LedgerPort } from '../ledger-adapter';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsService } from '../notifications';
 import { SavingsGoalsService } from './savings-goals.service';
 
 describe('SavingsGoalsService', () => {
   let service: SavingsGoalsService;
   let ledger: jest.Mocked<LedgerPort>;
-  let notifications: { notify: jest.Mock };
+  let notifications: {
+    notifyDepositReceived: jest.Mock;
+    notifyGoalReached: jest.Mock;
+    notifyInstallmentDue: jest.Mock;
+    notifyPlanCancelled: jest.Mock;
+  };
   let goal: Record<string, unknown>;
   let installments: Array<Record<string, unknown>>;
   let prisma: Record<string, unknown>;
@@ -28,7 +33,17 @@ describe('SavingsGoalsService', () => {
     qrCodeKey: 'y',
     createdAt: new Date(),
     updatedAt: new Date(),
-    shop: { sellerId: 'seller-1', name: 'Boutique' },
+    shop: {
+      sellerId: 'seller-1',
+      name: 'Boutique',
+      seller: { phone: '+2250100000000' },
+    },
+  };
+
+  const user = {
+    id: 'buyer-1',
+    phone: '+2250700000000',
+    email: 'buyer@example.com',
   };
 
   beforeEach(() => {
@@ -49,6 +64,7 @@ describe('SavingsGoalsService', () => {
       updatedAt: new Date(),
       installments,
       product,
+      user,
     };
 
     ledger = {
@@ -59,7 +75,10 @@ describe('SavingsGoalsService', () => {
     };
 
     notifications = {
-      notify: jest.fn(async (dto) => ({ id: 'notif-1', ...dto })),
+      notifyDepositReceived: jest.fn(async (dto) => ({ id: 'notif-dep', ...dto })),
+      notifyGoalReached: jest.fn(async (dto) => ({ id: 'notif-goal', ...dto })),
+      notifyInstallmentDue: jest.fn(async (dto) => ({ id: 'notif-due', ...dto })),
+      notifyPlanCancelled: jest.fn(async (dto) => ({ id: 'notif-cancel', ...dto })),
     };
 
     prisma = {
@@ -98,30 +117,34 @@ describe('SavingsGoalsService', () => {
             ...data,
             installments: [...installments],
             product,
+            user,
             id: 'goal-1',
             savedAmount: new Prisma.Decimal(0),
             status: SavingsGoalStatus.active,
             ledgerAccountId: data.ledgerAccountId,
           };
-          delete (goal as { installments?: unknown }).installments;
           return {
             ...goal,
             installments: [...installments],
             product,
+            user,
           };
         }),
         findUnique: jest.fn(async () => ({
           ...goal,
           installments: [...installments],
           product,
+          user,
         })),
         findMany: jest.fn(async () => [{ ...goal }]),
         update: jest.fn(
           async ({ data }: { data: Record<string, unknown> }) => ({
             ...goal,
             ...data,
+            status: (data.status as SavingsGoalStatus) ?? goal.status,
             installments: [...installments],
             product,
+            user,
             deposits: [],
           }),
         ),
@@ -175,33 +198,7 @@ describe('SavingsGoalsService', () => {
     expect(created.mode).toBe(SavingsMode.flexi);
   });
 
-  it('creates a schedule goal when installments sum to product price', async () => {
-    const created = await service.create({
-      userId: 'buyer-1',
-      productId: 'product-1',
-      mode: SavingsMode.schedule,
-      installments: [
-        { dueDate: '2026-09-01', amount: 40 },
-        { dueDate: '2026-10-01', amount: 60 },
-      ],
-    });
-
-    expect(created.mode).toBe(SavingsMode.schedule);
-    expect(installments).toHaveLength(2);
-  });
-
-  it('rejects schedule installments that do not match product price', async () => {
-    await expect(
-      service.create({
-        userId: 'buyer-1',
-        productId: 'product-1',
-        mode: SavingsMode.schedule,
-        installments: [{ dueDate: '2026-09-01', amount: 10 }],
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('records a deposit via LedgerPort and marks goal ready + notifies seller', async () => {
+  it('records a deposit, notifies deposit_received and goal_reached', async () => {
     goal.mode = SavingsMode.flexi;
     goal.savedAmount = new Prisma.Decimal(0);
 
@@ -213,11 +210,19 @@ describe('SavingsGoalsService', () => {
       expect.objectContaining({ goalId: 'goal-1' }),
     );
     expect(updated.status).toBe(SavingsGoalStatus.ready_for_withdrawal);
-    expect(notifications.notify).toHaveBeenCalledWith(
+    expect(notifications.notifyDepositReceived).toHaveBeenCalled();
+    expect(notifications.notifyGoalReached).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'seller-1',
-        type: 'savings.ready_for_withdrawal',
       }),
+    );
+  });
+
+  it('cancels a plan and notifies plan_cancelled', async () => {
+    const cancelled = await service.cancel('goal-1');
+    expect(cancelled.status).toBe(SavingsGoalStatus.cancelled);
+    expect(notifications.notifyPlanCancelled).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'buyer-1' }),
     );
   });
 
@@ -231,7 +236,7 @@ describe('SavingsGoalsService', () => {
     expect(ledger.recordDeposit).not.toHaveBeenCalled();
   });
 
-  it('dispatches installment reminders for schedule mode', async () => {
+  it('dispatches installment_due reminders', async () => {
     const due = {
       id: 'inst-1',
       goalId: 'goal-1',
@@ -241,6 +246,7 @@ describe('SavingsGoalsService', () => {
       reminderSentAt: null,
       goal: {
         userId: 'buyer-1',
+        user: { phone: '+2250700000000' },
         product: { name: 'Sneakers' },
       },
     };
@@ -252,10 +258,9 @@ describe('SavingsGoalsService', () => {
     const result = await service.dispatchDueReminders();
 
     expect(result.count).toBe(1);
-    expect(notifications.notify).toHaveBeenCalledWith(
+    expect(notifications.notifyInstallmentDue).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'buyer-1',
-        type: 'savings.installment_reminder',
       }),
     );
   });

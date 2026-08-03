@@ -1,10 +1,16 @@
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
+import {
+  NotificationChannel,
+  NotificationEventType,
+  type NotificationPort,
+} from './ports/notification.port';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
   const rows: Array<Record<string, unknown>> = [];
+  let notifier: jest.Mocked<NotificationPort>;
 
   const prisma = {
     notification: {
@@ -43,7 +49,11 @@ describe('NotificationsService', () => {
   beforeEach(() => {
     rows.length = 0;
     jest.clearAllMocks();
-    service = new NotificationsService(prisma as unknown as PrismaService);
+    notifier = { send: jest.fn(async () => undefined) };
+    service = new NotificationsService(
+      prisma as unknown as PrismaService,
+      notifier,
+    );
   });
 
   it('should return hello-world payload', () => {
@@ -53,26 +63,82 @@ describe('NotificationsService', () => {
     });
   });
 
-  it('creates and lists notifications for a user', async () => {
-    await service.notify({
+  it('emits deposit_received via NotificationPort on SMS + push', async () => {
+    const record = await service.notifyDepositReceived({
+      userId: 'buyer-1',
+      phone: '+2250700000000',
+      title: 'Versement reçu',
+      body: 'Paiement OK',
+    });
+
+    expect(record.type).toBe(NotificationEventType.deposit_received);
+    expect(notifier.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: NotificationEventType.deposit_received,
+        channels: [NotificationChannel.sms, NotificationChannel.push],
+        phone: '+2250700000000',
+      }),
+    );
+  });
+
+  it.each([
+    [
+      'goal_reached',
+      () =>
+        service.notifyGoalReached({
+          userId: 'seller-1',
+          title: 'Objectif atteint',
+          body: 'Prêt',
+        }),
+      NotificationEventType.goal_reached,
+    ],
+    [
+      'installment_due',
+      () =>
+        service.notifyInstallmentDue({
+          userId: 'buyer-1',
+          title: 'Échéance',
+          body: 'Bientôt',
+        }),
+      NotificationEventType.installment_due,
+    ],
+    [
+      'payment_link_paid_by_third_party',
+      () =>
+        service.notifyPaymentLinkPaidByThirdParty({
+          userId: 'buyer-1',
+          title: 'Tiers',
+          body: 'Payé',
+        }),
+      NotificationEventType.payment_link_paid_by_third_party,
+    ],
+    [
+      'plan_cancelled',
+      () =>
+        service.notifyPlanCancelled({
+          userId: 'buyer-1',
+          title: 'Annulé',
+          body: 'Stop',
+        }),
+      NotificationEventType.plan_cancelled,
+    ],
+  ] as const)('supports trigger %s', async (_name, run, event) => {
+    const record = await run();
+    expect(record.type).toBe(event);
+    expect(notifier.send).toHaveBeenCalledWith(
+      expect.objectContaining({ event }),
+    );
+  });
+
+  it('lists and marks notifications as read', async () => {
+    const created = await service.notifyGoalReached({
       userId: 'seller-1',
-      type: 'savings.ready_for_withdrawal',
-      title: 'Objectif atteint',
-      body: 'Un acheteur a terminé son épargne',
+      title: 't',
+      body: 'b',
     });
 
     const list = await service.listForUser('seller-1');
     expect(list).toHaveLength(1);
-    expect(list[0].type).toBe('savings.ready_for_withdrawal');
-  });
-
-  it('marks a notification as read', async () => {
-    const created = await service.notify({
-      userId: 'seller-1',
-      type: 'test',
-      title: 't',
-      body: 'b',
-    });
 
     const updated = await service.markRead(created.id);
     expect(updated.readAt).toBeInstanceOf(Date);
