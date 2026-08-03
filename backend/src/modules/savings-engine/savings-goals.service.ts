@@ -192,6 +192,22 @@ export class SavingsGoalsService {
   }
 
   async recordDeposit(goalId: string, dto: RecordDepositDto) {
+    return this.applyDeposit(goalId, dto, { creditLedger: true });
+  }
+
+  /**
+   * Applique les effets métier d’un dépôt déjà crédité au ledger
+   * (ex. webhook Mobile Money HMAC) — sans second `recordDeposit` ledger.
+   */
+  async applyDepositAlreadyOnLedger(goalId: string, dto: RecordDepositDto) {
+    return this.applyDeposit(goalId, dto, { creditLedger: false });
+  }
+
+  private async applyDeposit(
+    goalId: string,
+    dto: RecordDepositDto,
+    options: { creditLedger: boolean },
+  ) {
     const goal = await this.findById(goalId);
 
     if (goal.status !== SavingsGoalStatus.active) {
@@ -228,12 +244,14 @@ export class SavingsGoalsService {
       }
     }
 
-    await this.ledger.recordDeposit(goal.ledgerAccountId, amount.toNumber(), {
-      goalId: goal.id,
-      productId: goal.productId,
-      installmentId: installment?.id,
-      mode: goal.mode,
-    });
+    if (options.creditLedger) {
+      await this.ledger.recordDeposit(goal.ledgerAccountId, amount.toNumber(), {
+        goalId: goal.id,
+        productId: goal.productId,
+        installmentId: installment?.id,
+        mode: goal.mode,
+      });
+    }
 
     const { updated, reached } = await this.prisma.$transaction(async (tx) => {
       if (installment) {
