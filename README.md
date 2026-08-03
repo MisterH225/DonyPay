@@ -52,6 +52,8 @@ API NestJS modulaire (préfixe `/api`) :
 ```bash
 npm run backend:test
 npm run test:e2e --workspace=backend
+# Intégration (Postgres requis — triggers ledger, paiement délégué)
+npm run test:integration --workspace=backend
 ```
 
 ### Base de données
