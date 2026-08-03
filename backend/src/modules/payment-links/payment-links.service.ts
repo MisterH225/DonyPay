@@ -280,7 +280,7 @@ export class PaymentLinksService {
 
   async getPublicPage(token: string): Promise<PublicPaymentPage> {
     const link = await this.findByToken(token);
-    this.refreshExpired(link);
+    await this.refreshExpired(link);
 
     if (link.status === PaymentLinkStatus.expired) {
       throw new GoneException('Payment link has expired');
@@ -377,17 +377,19 @@ export class PaymentLinksService {
     return link;
   }
 
-  private refreshExpired(link: PaymentLink): void {
+  private async refreshExpired(link: PaymentLink): Promise<void> {
     if (
-      link.status === PaymentLinkStatus.pending &&
-      link.expiresAt.getTime() <= Date.now()
+      link.status !== PaymentLinkStatus.pending ||
+      link.expiresAt.getTime() > Date.now()
     ) {
-      link.status = PaymentLinkStatus.expired;
-      void this.prisma.paymentLink.update({
-        where: { id: link.id },
-        data: { status: PaymentLinkStatus.expired },
-      });
+      return;
     }
+
+    await this.prisma.paymentLink.update({
+      where: { id: link.id },
+      data: { status: PaymentLinkStatus.expired },
+    });
+    link.status = PaymentLinkStatus.expired;
   }
 
   private resolveTtlHours(): number {

@@ -282,6 +282,22 @@ describe('PaymentLinksService', () => {
     await expect(service.getPublicPage(created.token)).rejects.toBeInstanceOf(
       GoneException,
     );
+    expect(prisma.paymentLink.update).toHaveBeenCalledWith({
+      where: { id: 'link-1' },
+      data: { status: PaymentLinkStatus.expired },
+    });
+    expect(links[0].status).toBe(PaymentLinkStatus.expired);
+  });
+
+  it('propagates refreshExpired update failures', async () => {
+    const created = await service.create({ installmentId: 'inst-1' });
+    links[0].expiresAt = new Date(Date.now() - 1000);
+    prisma.paymentLink.update.mockRejectedValueOnce(new Error('db write failed'));
+
+    await expect(service.getPublicPage(created.token)).rejects.toThrow(
+      'db write failed',
+    );
+    expect(links[0].status).toBe(PaymentLinkStatus.pending);
   });
 
   it('throws when installment is missing', async () => {
