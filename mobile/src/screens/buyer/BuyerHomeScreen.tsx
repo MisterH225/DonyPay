@@ -98,7 +98,7 @@ export function BuyerHomeScreen() {
         />
         <PrimaryButton
           label="Compléter mon KYC"
-          onPress={() => navigation.navigate('BuyerTabs', { screen: 'KYC' })}
+          onPress={() => navigation.navigate('KycOnboarding')}
           variant="secondary"
         />
 

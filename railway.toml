@@ -8,7 +8,14 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile"
-watchPatterns = ["backend/**", "package.json", "package-lock.json"]
+watchPatterns = [
+  "backend/**",
+  "admin/package.json",
+  "mobile/package.json",
+  "package.json",
+  "package-lock.json",
+  "railway.toml",
+]
 
 [deploy]
 # startCommand omis → utilise le CMD du Dockerfile (migrate + node)

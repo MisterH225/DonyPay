@@ -12,7 +12,10 @@ import type {
 @Injectable()
 export class SandboxCinetPayClient implements CinetPayClient {
   private readonly logger = new Logger(SandboxCinetPayClient.name);
-  private readonly statuses = new Map<string, 'ACCEPTED' | 'REFUSED' | 'PENDING'>();
+  private readonly statuses = new Map<
+    string,
+    'ACCEPTED' | 'REFUSED' | 'PENDING'
+  >();
 
   async initiatePayment(
     input: InitiateCinetPayPaymentInput,

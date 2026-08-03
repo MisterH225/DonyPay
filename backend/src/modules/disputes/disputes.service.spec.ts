@@ -47,7 +47,11 @@ describe('DisputesService', () => {
 
   beforeEach(() => {
     prisma = {
-      user: { findUnique: jest.fn(async ({ where }) => (where.id === user.id ? user : null)) },
+      user: {
+        findUnique: jest.fn(async ({ where }) =>
+          where.id === user.id ? user : null,
+        ),
+      },
       savingsGoal: {
         findUnique: jest.fn(async ({ where }) =>
           where.id === goal.id ? goal : null,
@@ -79,8 +83,8 @@ describe('DisputesService', () => {
       })),
     };
 
-    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
-      fn(prisma),
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
     );
 
     service = new DisputesService(prisma as never, storage);
@@ -94,7 +98,7 @@ describe('DisputesService', () => {
   });
 
   describe('create', () => {
-    it('crée une réclamation liée à un plan d\'épargne avec message initial', async () => {
+    it("crée une réclamation liée à un plan d'épargne avec message initial", async () => {
       const created = {
         id: 'disp-1',
         openedById: user.id,

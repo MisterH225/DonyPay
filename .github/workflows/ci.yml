@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  DATABASE_URL: postgresql://donypay:donypay@localhost:5432/donypay?schema=public
+  ADMIN_API_KEY: ci-admin-key
+  ADMIN_PASSWORD: ci-admin-password
+  ADMIN_SESSION_SECRET: ci-admin-session
+  DONYPAY_API_URL: http://localhost:3000/api
+
+jobs:
+  backend:
+    name: Backend (lint, test, build)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: donypay
+          POSTGRES_PASSWORD: donypay
+          POSTGRES_DB: donypay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U donypay -d donypay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate + migrate
+        run: |
+          npm run prisma:generate --workspace=backend
+          npx prisma migrate deploy --schema=backend/prisma/schema.prisma
+
+      - name: Typecheck backend
+        run: npm run typecheck --workspace=backend
+
+      - name: ESLint backend (non-bloquant tant que la dette n’est pas soldée)
+        run: npm run lint:check --workspace=backend
+        continue-on-error: true
+
+      - name: Unit tests
+        run: npm run test --workspace=backend -- --ci --passWithNoTests
+
+      - name: E2E tests
+        run: npm run test:e2e --workspace=backend -- --ci
+
+      - name: Integration tests
+        env:
+          REQUIRE_INTEGRATION_DB: "1"
+        run: npm run test:integration --workspace=backend -- --ci
+
+      - name: Build backend
+        run: npm run backend:build
+
+      - name: Seed demo (smoke)
+        run: npm run db:seed
+
+  admin:
+    name: Admin (typecheck, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck admin
+        run: npm run typecheck --workspace=admin
+
+      - name: Build admin
+        run: npm run admin:build
+
+  mobile:
+    name: Mobile (typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck mobile
+        run: npm run typecheck --workspace=mobile
+
+  deploy-staging:
+    name: Deploy staging (Railway)
+    needs: [backend, admin, mobile]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::notice::RAILWAY_TOKEN non configuré — skip deploy."
+            echo "Ajoute le secret RAILWAY_TOKEN (et vars RAILWAY_*) pour activer le déploiement auto."
+            echo "Sinon active l'auto-deploy GitHub dans le dashboard Railway sur main/staging."
+            exit 0
+          fi
+          PROJECT_ID="${RAILWAY_PROJECT_ID:-90de654d-6836-45a1-b750-c61b52aa29b3}"
+          ENVIRONMENT="${RAILWAY_ENVIRONMENT:-staging}"
+          ARGS=(link --project "$PROJECT_ID" --environment "$ENVIRONMENT")
+          if [ -n "${RAILWAY_SERVICE_ID:-}" ]; then
+            ARGS+=(--service "$RAILWAY_SERVICE_ID")
+          fi
+          railway "${ARGS[@]}"
+          railway up --ci --detach
+          echo "Staging deploy triggered on Railway (${ENVIRONMENT})."

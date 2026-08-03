@@ -1,6 +1,6 @@
-# DonyPay
+# DôniPay
 
-Application Buy Now Pay Later avec scoring utilisateur.
+Application Buy Now Pay Later — **paiement flexible** (marque : blanc + violet `#6D28D9`).
 
 Monorepo :
 
@@ -8,6 +8,26 @@ Monorepo :
 - `mobile/` — React Native (Expo) avec bascule acheteur / vendeur
 - `admin/` — Console Next.js ops (KYC, ledger lecture seule, litiges) — **admin only**
 - `docker-compose.yml` — Postgres local
+
+## CI / CD
+
+GitHub Actions (`.github/workflows/ci.yml`) sur `push` / PR vers `main` et `staging` :
+
+1. **Backend** — typecheck, ESLint (info), unit, e2e, intégration (Postgres service), build, seed smoke
+2. **Admin** — typecheck + build Next.js
+3. **Mobile** — `tsc --noEmit`
+4. **Deploy staging** (push `main`/`staging` uniquement) — `railway up` si le secret `RAILWAY_TOKEN` est présent
+
+Secrets / variables GitHub à configurer pour le deploy auto :
+
+| Nom | Type | Description |
+| --- | --- | --- |
+| `RAILWAY_TOKEN` | secret | Token Railway (Account / Project) |
+| `RAILWAY_PROJECT_ID` | variable | défaut `90de654d-6836-45a1-b750-c61b52aa29b3` |
+| `RAILWAY_SERVICE_ID` | variable | ID du service API (optionnel si un seul service) |
+| `RAILWAY_ENVIRONMENT` | variable | `staging` (défaut) |
+
+Sans `RAILWAY_TOKEN`, le job deploy est un no-op (notice) — tu peux aussi activer l’auto-deploy GitHub→Railway dans le dashboard.
 
 ## Déploiement Railway
 
@@ -26,6 +46,8 @@ Dans le service Railway :
 | --- | --- |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence vers le service Postgres Railway) |
 | `PORT` | **ne pas définir** (Railway l’injecte ; surtout pas `5432`) |
+| `SEED_DEMO` | `true` sur staging pour peupler le parcours démo au boot |
+| `ADMIN_API_KEY` | clé console admin |
 
 Pièges fréquents :
 - `PORT=5432` → c’est le port Postgres, pas celui de Nest
@@ -49,6 +71,8 @@ npm run db:up
 # Backend
 cp backend/.env.example backend/.env
 npm run prisma:generate
+npm run prisma:migrate
+npm run db:seed          # données démo (parcours sans Mobile Money)
 npm run backend:dev
 
 # Mobile (autre terminal)
@@ -140,6 +164,20 @@ npm run test:integration --workspace=backend
 
 Configurer `DATABASE_URL` dans `backend/.env` (local Docker ou connection string Supabase).
 
+### Seed démo (`npm run db:seed`)
+
+Peuple un parcours **sans Mobile Money / CinetPay** (écritures ledger mock) :
+
+| Email | Rôle |
+| --- | --- |
+| `admin@donypay.demo` | Admin ops |
+| `vendeur@donypay.demo` | Vendeur + boutique + 3 produits |
+| `acheteur@donypay.demo` | KYC vérifié — plans active / flexi / ready / completed |
+| `kyc-pending@donypay.demo` | KYC en attente (revue admin) |
+| `kyc-rejected@donypay.demo` | KYC rejeté |
+
+Inclut aussi un lien de paiement délégué `pending` et un litige `open`. Idempotent (emails `@donypay.demo`).
+
 ## Mobile
 
 Navigation Expo avec bascule **Acheteur / Vendeur** (toggle sur les écrans d’accueil).
@@ -151,26 +189,14 @@ Navigation Expo avec bascule **Acheteur / Vendeur** (toggle sur les écrans d’
 
 ```
 /
+├── .github/workflows/ci.yml
 ├── backend/
-│   ├── prisma/
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── identity/
-│   │   │   ├── catalog/
-│   │   │   ├── savings-engine/
-│   │   │   ├── payment-links/
-│   │   │   ├── ledger-adapter/
-│   │   │   ├── notifications/
-│   │   │   └── disputes/
-│   │   └── prisma/
+│   ├── prisma/          # migrations + seed.ts
+│   ├── src/modules/     # identity, catalog, savings, payment-links, ledger, notifications, disputes, admin
 │   └── test/
+├── admin/               # console Next.js ops
 ├── mobile/
-│   └── src/
-│       ├── components/
-│       ├── context/
-│       ├── navigation/
-│       ├── screens/
-│       └── types/
 ├── docker-compose.yml
+├── railway.toml
 └── package.json
 ```

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CartProvider } from './src/context/CartContext';
 import { RoleProvider } from './src/context/RoleContext';
 import { SessionProvider } from './src/context/SessionContext';
 import { ShopProvider } from './src/context/ShopContext';
@@ -12,8 +13,10 @@ export default function App() {
       <RoleProvider>
         <SessionProvider>
           <ShopProvider>
-            <RootNavigator />
-            <StatusBar style="dark" />
+            <CartProvider>
+              <RootNavigator />
+              <StatusBar style="dark" />
+            </CartProvider>
           </ShopProvider>
         </SessionProvider>
       </RoleProvider>

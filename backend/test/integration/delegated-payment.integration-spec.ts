@@ -66,6 +66,9 @@ describe('Delegated payment scenario (integration)', () => {
 
   it('lien → paiement tiers → échéance payée → notif vendeur + solde cohérent', async () => {
     if (!dbAvailable) {
+      if (process.env.REQUIRE_INTEGRATION_DB === '1') {
+        throw new Error('DATABASE_URL injoignable (REQUIRE_INTEGRATION_DB=1)');
+      }
       return console.warn('SKIP: DATABASE_URL injoignable');
     }
 
@@ -165,7 +168,7 @@ describe('Delegated payment scenario (integration)', () => {
       orderBy: { createdAt: 'desc' },
     });
     expect(sellerNotifs.length).toBeGreaterThanOrEqual(1);
-    expect(sellerNotifs[0].type).toBe('savings.ready_for_withdrawal');
+    expect(sellerNotifs[0].type).toBe('goal_reached');
     expect(sellerNotifs[0].title).toMatch(/atteint/i);
 
     // Solde ledger cohérent avec le versement

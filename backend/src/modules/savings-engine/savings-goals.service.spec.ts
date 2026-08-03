@@ -76,7 +76,10 @@ describe('SavingsGoalsService', () => {
     };
 
     notifications = {
-      notifyDepositReceived: jest.fn(async (dto) => ({ id: 'notif-dep', ...dto })),
+      notifyDepositReceived: jest.fn(async (dto) => ({
+        id: 'notif-dep',
+        ...dto,
+      })),
       notifyGoalReached: jest.fn(async (dto) => ({ id: 'notif-goal', ...dto })),
       notifyInstallmentDue: jest.fn(async (dto) => ({ id: 'notif-due', ...dto })),
       notifyPlanCancelled: jest.fn(async (dto) => ({ id: 'notif-cancel', ...dto })),
@@ -98,7 +101,7 @@ describe('SavingsGoalsService', () => {
           if (
             data.installments &&
             typeof data.installments === 'object' &&
-            'create' in (data.installments as object)
+            'create' in data.installments
           ) {
             const create = (
               data.installments as { create: Array<Record<string, unknown>> }
@@ -171,11 +174,13 @@ describe('SavingsGoalsService', () => {
         findMany: jest.fn(async () => []),
       },
       savingsDeposit: {
-        create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({
-          id: 'dep-1',
-          createdAt: new Date(),
-          ...data,
-        })),
+        create: jest.fn(
+          async ({ data }: { data: Record<string, unknown> }) => ({
+            id: 'dep-1',
+            createdAt: new Date(),
+            ...data,
+          }),
+        ),
       },
       $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
         fn(prisma),
@@ -256,9 +261,9 @@ describe('SavingsGoalsService', () => {
       },
     };
 
-    (prisma.savingsInstallment as { findMany: jest.Mock }).findMany.mockResolvedValue(
-      [due],
-    );
+    (
+      prisma.savingsInstallment as { findMany: jest.Mock }
+    ).findMany.mockResolvedValue([due]);
 
     const result = await service.dispatchDueReminders();
 

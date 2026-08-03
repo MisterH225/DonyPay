@@ -1,20 +1,21 @@
 :root {
-  --bg: #f4f7f8;
+  --bg: #f8f5ff;
   --bg-panel: #ffffff;
-  --ink: #12323f;
-  --muted: #5b6f7a;
-  --line: #d5e1e8;
-  --accent: #0e7c7b;
-  --accent-soft: #d9f2f1;
+  --ink: #2e1065;
+  --muted: #6b7280;
+  --line: #e9d5ff;
+  --accent: #6d28d9;
+  --accent-deep: #5b21b6;
+  --accent-soft: #ede9fe;
   --danger: #b42318;
   --danger-soft: #fde8e6;
-  --ok: #1b7a4e;
+  --ok: #15803d;
   --ok-soft: #e5f6ec;
   --warn: #9a6700;
   --warn-soft: #fff6dd;
   --radius: 14px;
-  --shadow: 0 10px 30px rgba(18, 50, 63, 0.06);
-  --font: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --shadow: 0 10px 30px rgba(46, 16, 101, 0.08);
+  --font: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
   --sans: "Avenir Next", "Segoe UI", sans-serif;
 }
 
@@ -28,8 +29,8 @@ body {
   padding: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, #e7f4f3 0%, transparent 40%),
-    linear-gradient(180deg, #f7fbfb 0%, var(--bg) 100%);
+    radial-gradient(circle at top left, #ede9fe 0%, transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
   color: var(--ink);
   font-family: var(--sans);
 }
@@ -55,21 +56,27 @@ textarea {
 .sidebar {
   padding: 28px 20px;
   border-right: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(10px);
 }
 
-.brand {
-  font-family: var(--font);
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 6px;
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.brand-lockup img {
+  display: block;
+  width: min(100%, 180px);
+  height: auto;
 }
 
 .brand-sub {
   color: var(--muted);
   font-size: 13px;
-  margin: 0 0 28px;
+  margin: 0;
 }
 
 .nav {
@@ -99,6 +106,7 @@ textarea {
   font-family: var(--font);
   font-size: 34px;
   margin: 0 0 8px;
+  color: var(--ink);
 }
 
 .page-sub {
@@ -188,7 +196,7 @@ textarea {
 }
 
 .btn.primary {
-  background: var(--ink);
+  background: var(--accent);
   color: white;
 }
 
@@ -250,6 +258,13 @@ textarea {
 
 .login-card {
   width: min(420px, 100%);
+}
+
+.login-logo {
+  width: min(100%, 260px);
+  height: auto;
+  display: block;
+  margin-bottom: 8px;
 }
 
 @media (max-width: 860px) {

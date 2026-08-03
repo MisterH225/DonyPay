@@ -1,4 +1,7 @@
-import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AdminApiKeyGuard } from './admin-api-key.guard';
 
 describe('AdminApiKeyGuard', () => {
@@ -23,14 +26,16 @@ describe('AdminApiKeyGuard', () => {
 
   it('rejects when ADMIN_API_KEY is missing', () => {
     delete process.env.ADMIN_API_KEY;
-    expect(() => guard.canActivate(ctx({}))).toThrow(ServiceUnavailableException);
+    expect(() => guard.canActivate(ctx({}))).toThrow(
+      ServiceUnavailableException,
+    );
   });
 
   it('rejects invalid key', () => {
     process.env.ADMIN_API_KEY = 'secret';
-    expect(() =>
-      guard.canActivate(ctx({ 'x-admin-key': 'wrong' })),
-    ).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(ctx({ 'x-admin-key': 'wrong' }))).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('accepts valid X-Admin-Key', () => {

@@ -120,7 +120,7 @@ export class NotificationsService {
         metadata: {
           ...(input.metadata ?? {}),
           channels,
-        } as Prisma.InputJsonValue,
+        },
       },
     });
 

@@ -9,7 +9,9 @@ import { ShopsService } from './shops.service';
 describe('ProductsService', () => {
   let service: ProductsService;
   let products: Array<Record<string, unknown>>;
-  let prisma: { product: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock } };
+  let prisma: {
+    product: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock };
+  };
   let shopsService: ShopsService;
   let storage: CatalogStoragePort;
   let qrCode: QrCodePort;

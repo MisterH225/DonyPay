@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 220" fill="none">
+  <rect x="0" y="18" width="184" height="184" rx="40" fill="#6D28D9"/>
+  <g
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    transform="translate(0 18) scale(0.359375)"
+  >
+    <path stroke-width="28" d="M156 120h70c96 0 156 60 156 136s-60 136-156 136h-70V120z"/>
+    <path stroke-width="28" d="M198 162h40c62 0 100 40 100 94s-38 94-100 94h-40V162z"/>
+    <path stroke-width="28" d="M240 204h14c30 0 48 22 48 52s-18 52-48 52h-14V204z"/>
+  </g>
+
+  <text
+    x="220"
+    y="118"
+    font-family="Arial Black, Helvetica Neue, Arial, sans-serif"
+    font-size="84"
+    font-weight="800"
+    fill="#6D28D9"
+    letter-spacing="-1"
+  >D&#xF4;niPay</text>
+
+  <text
+    x="224"
+    y="168"
+    font-family="Helvetica Neue, Arial, sans-serif"
+    font-size="22"
+    font-weight="600"
+    fill="#6D28D9"
+    letter-spacing="8"
+  >PAIEMENT FLEXIBLE</text>
+</svg>

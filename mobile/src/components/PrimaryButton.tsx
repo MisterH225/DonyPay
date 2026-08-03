@@ -40,7 +40,9 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? colors.ink : colors.white} />
+        <ActivityIndicator
+          color={variant === 'secondary' ? colors.accent : colors.white}
+        />
       ) : (
         <Text
           style={[
@@ -57,21 +59,21 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
+    minHeight: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  primary: { backgroundColor: colors.ink },
+  primary: { backgroundColor: colors.accent },
   secondary: {
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
   },
   danger: { backgroundColor: colors.danger },
-  disabled: { opacity: 0.5 },
-  pressed: { transform: [{ scale: 0.98 }] },
+  disabled: { opacity: 0.45 },
+  pressed: { opacity: 0.9 },
   label: { color: colors.white, fontWeight: '700', fontSize: 16 },
-  labelSecondary: { color: colors.ink },
+  labelSecondary: { color: colors.accent },
 });

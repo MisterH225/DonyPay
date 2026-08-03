@@ -10,7 +10,7 @@ describe('MockLedgerAdapter', () => {
 
   beforeEach(() => {
     prisma = createInMemoryPrismaFake();
-    adapter = new MockLedgerAdapter(prisma as unknown as PrismaService);
+    adapter = new MockLedgerAdapter(prisma);
   });
 
   it('opens a savings account and starts at zero', async () => {
@@ -54,9 +54,9 @@ describe('MockLedgerAdapter', () => {
       LedgerEntryType.credit,
       LedgerEntryType.debit,
     ]);
-    expect(
-      savingsEntries.map((entry) => Number(entry.balanceAfter)),
-    ).toEqual([100, 60]);
+    expect(savingsEntries.map((entry) => Number(entry.balanceAfter))).toEqual([
+      100, 60,
+    ]);
   });
 
   it('never updates or deletes existing ledger entries', async () => {
@@ -74,9 +74,9 @@ describe('MockLedgerAdapter', () => {
     const accountId = await adapter.openSavingsAccount('user-1');
     await adapter.recordDeposit(accountId, 10);
 
-    await expect(adapter.recordWithdrawal(accountId, 11)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      adapter.recordWithdrawal(accountId, 11),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects unknown account', async () => {

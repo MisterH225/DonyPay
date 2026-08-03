@@ -1,9 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  LedgerAccountKind,
-  MobileMoneyCollectionStatus,
-} from '@prisma/client';
+import { LedgerAccountKind, MobileMoneyCollectionStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { signCinetPayNotify } from '../mobile-money/cinetpay-hmac';
 import { SandboxCinetPayClient } from '../mobile-money/sandbox-cinetpay.client';
@@ -19,7 +16,7 @@ describe('MobileMoneyAdapter', () => {
 
   beforeEach(() => {
     prisma = createInMemoryPrismaFake();
-    accounting = new MockLedgerAdapter(prisma as unknown as PrismaService);
+    accounting = new MockLedgerAdapter(prisma);
     cinetPay = new SandboxCinetPayClient();
     const config = {
       get: (key: string, defaultValue?: string) => {
@@ -35,12 +32,7 @@ describe('MobileMoneyAdapter', () => {
       },
     } as unknown as ConfigService;
 
-    adapter = new MobileMoneyAdapter(
-      prisma as unknown as PrismaService,
-      accounting,
-      cinetPay,
-      config,
-    );
+    adapter = new MobileMoneyAdapter(prisma, accounting, cinetPay, config);
   });
 
   it('implémente LedgerPort (délégation comptable)', async () => {

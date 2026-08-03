@@ -29,7 +29,11 @@ export function createInMemoryPrismaFake() {
 
   const api = {
     ledgerAccount: {
-      async create({ data }: { data: { userId?: string | null; kind: LedgerAccountKind } }) {
+      async create({
+        data,
+      }: {
+        data: { userId?: string | null; kind: LedgerAccountKind };
+      }) {
         const row: AccountRow = {
           id: nextId(),
           userId: data.userId ?? null,
@@ -96,8 +100,7 @@ export function createInMemoryPrismaFake() {
         filtered.sort((a, b) => {
           for (const rule of orderBy ?? []) {
             if (rule.createdAt) {
-              const delta =
-                a.createdAt.getTime() - b.createdAt.getTime();
+              const delta = a.createdAt.getTime() - b.createdAt.getTime();
               if (delta !== 0) {
                 return rule.createdAt === 'desc' ? -delta : delta;
               }

@@ -33,7 +33,5 @@ export interface KycProviderPort {
     applicant: ExternalKycApplicant,
   ): Promise<ExternalKycSubmissionResult>;
 
-  getVerificationStatus(
-    externalId: string,
-  ): Promise<ExternalKycStatusResult>;
+  getVerificationStatus(externalId: string): Promise<ExternalKycStatusResult>;
 }

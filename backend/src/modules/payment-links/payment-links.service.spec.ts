@@ -179,7 +179,9 @@ describe('PaymentLinksService', () => {
     });
     expect(installment.payerName).toBe('Jean Dupont');
     // même numéro que le owner → pas de notif "tiers"
-    expect(notifications.notifyPaymentLinkPaidByThirdParty).not.toHaveBeenCalled();
+    expect(
+      notifications.notifyPaymentLinkPaidByThirdParty,
+    ).not.toHaveBeenCalled();
   });
 
   it('notifies owner when payment link is paid by a third party', async () => {
@@ -192,7 +194,9 @@ describe('PaymentLinksService', () => {
       payerOperator: 'MTN',
     });
 
-    expect(notifications.notifyPaymentLinkPaidByThirdParty).toHaveBeenCalledWith(
+    expect(
+      notifications.notifyPaymentLinkPaidByThirdParty,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'buyer-1',
       }),

@@ -64,9 +64,7 @@ export class SavingsGoalsService {
         targetAmount,
         ledgerAccountId,
         flexiStartsAt:
-          dto.mode === SavingsMode.flexi
-            ? new Date(dto.flexiStartsAt!)
-            : null,
+          dto.mode === SavingsMode.flexi ? new Date(dto.flexiStartsAt!) : null,
         flexiEndsAt:
           dto.mode === SavingsMode.flexi ? new Date(dto.flexiEndsAt!) : null,
         installments:
@@ -211,8 +209,7 @@ export class SavingsGoalsService {
         );
       }
       installment =
-        goal.installments.find((item) => item.id === dto.installmentId) ??
-        null;
+        goal.installments.find((item) => item.id === dto.installmentId) ?? null;
       if (!installment) {
         throw new NotFoundException(
           `Installment ${dto.installmentId} not found on this goal`,
@@ -223,16 +220,12 @@ export class SavingsGoalsService {
       }
     }
 
-    await this.ledger.recordDeposit(
-      goal.ledgerAccountId,
-      amount.toNumber(),
-      {
-        goalId: goal.id,
-        productId: goal.productId,
-        installmentId: installment?.id,
-        mode: goal.mode,
-      },
-    );
+    await this.ledger.recordDeposit(goal.ledgerAccountId, amount.toNumber(), {
+      goalId: goal.id,
+      productId: goal.productId,
+      installmentId: installment?.id,
+      mode: goal.mode,
+    });
 
     const newSaved = goal.savedAmount.add(amount);
     const reached = newSaved.greaterThanOrEqualTo(goal.targetAmount);

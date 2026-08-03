@@ -34,12 +34,12 @@ function SellerTabs() {
     <Tab.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.sellerInk,
+        headerTintColor: colors.ink,
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.line,
         },
-        tabBarActiveTintColor: colors.sellerInk,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
       }}
     >
@@ -67,7 +67,7 @@ export function SellerNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.sellerInk,
+        headerTintColor: colors.ink,
         contentStyle: { backgroundColor: colors.bg },
       }}
     >

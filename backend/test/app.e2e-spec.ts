@@ -31,13 +31,10 @@ describe('AppController (e2e)', () => {
   });
 
   it('/api (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/api')
-      .expect(200)
-      .expect({
-        app: 'donypay-backend',
-        message: 'Hello from DonyPay API',
-      });
+    return request(app.getHttpServer()).get('/api').expect(200).expect({
+      app: 'donypay-backend',
+      message: 'Hello from DonyPay API',
+    });
   });
 
   it('/api/identity/hello (GET)', () => {

@@ -15,7 +15,4 @@ export {
   type DocumentStoragePort,
   type StoredDocument,
 } from './ports/document-storage.port';
-export {
-  SMS_SENDER_PORT,
-  type SmsSenderPort,
-} from './ports/sms-sender.port';
+export { SMS_SENDER_PORT, type SmsSenderPort } from './ports/sms-sender.port';

@@ -28,9 +28,7 @@ export type CinetPayNotifyPayload = Record<string, string | undefined>;
 /**
  * Construit la chaîne à signer (concaténation ordonnée des champs notification).
  */
-export function buildCinetPayHmacPayload(
-  body: CinetPayNotifyPayload,
-): string {
+export function buildCinetPayHmacPayload(body: CinetPayNotifyPayload): string {
   return CINETPAY_HMAC_FIELDS.map((field) => body[field] ?? '').join('');
 }
 

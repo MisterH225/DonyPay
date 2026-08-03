@@ -26,10 +26,7 @@ import type {
   CinetPayWebhookBody,
 } from '../mobile-money/cinetpay.types';
 import { SandboxCinetPayClient } from '../mobile-money/sandbox-cinetpay.client';
-import {
-  LedgerMetadata,
-  LedgerPort,
-} from '../ports/ledger.port';
+import { LedgerMetadata, LedgerPort } from '../ports/ledger.port';
 import { MockLedgerAdapter } from './mock-ledger.adapter';
 
 export type InitiateCollectionInput = {

@@ -11,15 +11,18 @@ RUN apt-get update -qq \
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
 COPY mobile/package.json ./mobile/
+COPY admin/package.json ./admin/
 
 # Install all workspaces deps (incl. build tools: nest CLI, typescript, prisma)
 RUN npm ci
 
 COPY backend ./backend
 
+# Conserve ts-node pour `prisma db seed` (SEED_DEMO) même en prod slim.
 RUN npm run prisma:generate --workspace=backend \
   && npm run build --workspace=backend \
-  && npm prune --omit=dev
+  && npm prune --omit=dev \
+  && npm install --no-save --workspace=backend ts-node typescript @types/node
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app

@@ -9,16 +9,18 @@ describe('UsersService', () => {
 
   const prisma = {
     user: {
-      findUnique: jest.fn(async ({ where }: { where: { id?: string; email?: string } }) => {
-        if (where.id) return users.get(where.id) ?? null;
-        if (where.email) {
-          return (
-            [...users.values()].find((user) => user.email === where.email) ??
-            null
-          );
-        }
-        return null;
-      }),
+      findUnique: jest.fn(
+        async ({ where }: { where: { id?: string; email?: string } }) => {
+          if (where.id) return users.get(where.id) ?? null;
+          if (where.email) {
+            return (
+              [...users.values()].find((user) => user.email === where.email) ??
+              null
+            );
+          }
+          return null;
+        },
+      ),
       create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
         const user = {
           id: 'user-1',
@@ -28,7 +30,7 @@ describe('UsersService', () => {
           updatedAt: new Date(),
           ...data,
         };
-        users.set(user.id as string, user);
+        users.set(user.id, user);
         return user;
       }),
     },

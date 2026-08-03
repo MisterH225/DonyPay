@@ -49,11 +49,16 @@ export async function resetIntegrationDatabase(
 ): Promise<void> {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      "dispute_ratings",
+      "dispute_attachments",
+      "dispute_messages",
+      "disputes",
       "notifications",
       "payment_links",
       "savings_deposits",
       "savings_installments",
       "savings_goals",
+      "mobile_money_collections",
       "ledger_entries",
       "ledger_accounts",
       "products",

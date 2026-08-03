@@ -1,22 +1,40 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BuyerHomeScreen } from '../screens/buyer/BuyerHomeScreen';
+import { CartScreen } from '../screens/buyer/CartScreen';
+import { CheckoutScreen } from '../screens/buyer/CheckoutScreen';
 import { CreateGoalScreen } from '../screens/buyer/CreateGoalScreen';
 import { GoalDetailScreen } from '../screens/buyer/GoalDetailScreen';
 import { KycOnboardingScreen } from '../screens/buyer/KycOnboardingScreen';
+import { MessagesScreen } from '../screens/buyer/MessagesScreen';
+import { OrderConfirmationScreen } from '../screens/buyer/OrderConfirmationScreen';
 import { PaymentLinkShareScreen } from '../screens/buyer/PaymentLinkShareScreen';
+import { ProductDetailScreen } from '../screens/buyer/ProductDetailScreen';
+import { ProductListScreen } from '../screens/buyer/ProductListScreen';
+import { ProfileScreen } from '../screens/buyer/ProfileScreen';
+import { ScannerScreen } from '../screens/buyer/ScannerScreen';
 import { TransactionsScreen } from '../screens/buyer/TransactionsScreen';
 import { colors } from '../theme/colors';
 
 export type BuyerTabParamList = {
   Accueil: undefined;
-  Historique: undefined;
-  KYC: undefined;
+  Epargnes: undefined;
+  Scanner: undefined;
+  Messages: undefined;
+  Profil: undefined;
 };
 
 export type BuyerStackParamList = {
   BuyerTabs: NavigatorScreenParams<BuyerTabParamList> | undefined;
+  ProductDetail: { productId: string };
+  Cart: undefined;
+  Checkout: undefined;
+  OrderConfirmation: { orderId: string; total: number };
   CreateGoal: { productId?: string } | undefined;
   GoalDetail: { goalId: string };
   PaymentLinkShare: {
@@ -26,39 +44,92 @@ export type BuyerStackParamList = {
     productName?: string;
   };
   KycOnboarding: undefined;
+  Historique: undefined;
 };
 
 const Tab = createBottomTabNavigator<BuyerTabParamList>();
 const Stack = createNativeStackNavigator<BuyerStackParamList>();
 
+function QrTabButton({ onPress }: { onPress?: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.qrWrap} accessibilityLabel="Scanner QR">
+      <View style={styles.qrBtn}>
+        <Ionicons name="qr-code" size={26} color={colors.white} />
+      </View>
+      <Text style={styles.qrLabel}>Scanner</Text>
+    </Pressable>
+  );
+}
+
 function BuyerTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
+
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.ink,
+        headerShown: false,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.line,
+          height: 56 + bottomPad,
+          paddingBottom: bottomPad,
+          paddingTop: 6,
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tab.Screen
         name="Accueil"
+        component={ProductListScreen}
+        options={{
+          title: 'Accueil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Epargnes"
         component={BuyerHomeScreen}
-        options={{ title: 'Épargne', headerShown: false }}
+        options={{
+          title: 'Mes épargnes',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
-        name="Historique"
-        component={TransactionsScreen}
-        options={{ title: 'Historique', headerShown: false }}
+        name="Scanner"
+        component={ScannerScreen}
+        options={{
+          title: 'Scanner',
+          tabBarButton: (props) => (
+            <QrTabButton onPress={props.onPress as () => void} />
+          ),
+        }}
       />
       <Tab.Screen
-        name="KYC"
-        component={KycOnboardingScreen}
-        options={{ title: 'Identité', headerShown: false }}
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          title: 'Messages',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profil"
+        component={ProfileScreen}
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
@@ -68,36 +139,71 @@ export function BuyerNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.ink,
+        headerShown: false,
         contentStyle: { backgroundColor: colors.bg },
       }}
     >
+      <Stack.Screen name="BuyerTabs" component={BuyerTabs} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen
-        name="BuyerTabs"
-        component={BuyerTabs}
-        options={{ headerShown: false }}
+        name="OrderConfirmation"
+        component={OrderConfirmationScreen}
       />
       <Stack.Screen
         name="CreateGoal"
         component={CreateGoalScreen}
-        options={{ title: 'Nouvel objectif' }}
+        options={{ headerShown: true, title: 'Nouvel objectif' }}
       />
       <Stack.Screen
         name="GoalDetail"
         component={GoalDetailScreen}
-        options={{ title: 'Objectif' }}
+        options={{ headerShown: true, title: 'Objectif' }}
       />
       <Stack.Screen
         name="PaymentLinkShare"
         component={PaymentLinkShareScreen}
-        options={{ title: 'Lien de paiement' }}
+        options={{ headerShown: true, title: 'Lien de paiement' }}
       />
       <Stack.Screen
         name="KycOnboarding"
         component={KycOnboardingScreen}
-        options={{ title: 'Vérification KYC' }}
+        options={{ headerShown: true, title: 'Vérification KYC' }}
+      />
+      <Stack.Screen
+        name="Historique"
+        component={TransactionsScreen}
+        options={{ headerShown: true, title: 'Historique' }}
       />
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  qrWrap: {
+    top: -18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  qrBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  qrLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+});
