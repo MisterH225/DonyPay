@@ -1,18 +1,18 @@
 /**
- * Charte DôniPay — blanc + violet.
+ * Charte DôniPay — blanc + violet (accent unique).
  */
 export const colors = {
   bg: '#FFFFFF',
-  bgSoft: '#F8F5FF',
-  bgWarm: '#F3EDFF',
-  ink: '#2E1065',
+  bgSoft: '#FAFAFC',
+  ink: '#1F2937',
   muted: '#6B7280',
-  line: '#E9D5FF',
+  line: '#E5E7EB',
   accent: '#6D28D9',
   accentDeep: '#5B21B6',
   accentSoft: '#EDE9FE',
-  danger: '#B42318',
-  success: '#15803D',
+  danger: '#DC2626',
+  success: '#16A34A',
   white: '#FFFFFF',
-  sellerInk: '#4C1D95',
+  star: '#F59E0B',
+  overlay: 'rgba(17, 24, 39, 0.45)',
 };
