@@ -9,3 +9,83 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+enum UserType {
+  individual
+  company
+}
+
+enum KycStatus {
+  pending
+  verified
+  rejected
+}
+
+enum KycDocumentType {
+  identity_document
+  proof_of_address
+}
+
+enum TwoFactorMethod {
+  totp
+  sms
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  phone           String?
+  type            UserType
+  firstName       String?          @map("first_name")
+  lastName        String?          @map("last_name")
+  companyName     String?          @map("company_name")
+  siret           String?
+  kycStatus       KycStatus        @default(pending) @map("kyc_status")
+  kycReviewedAt   DateTime?        @map("kyc_reviewed_at") @db.Timestamptz(6)
+  kycRejectReason String?          @map("kyc_reject_reason")
+  externalKycId   String?          @map("external_kyc_id")
+  twoFactorEnabled Boolean         @default(false) @map("two_factor_enabled")
+  twoFactorMethod TwoFactorMethod? @map("two_factor_method")
+  totpSecret      String?          @map("totp_secret")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  documents           KycDocument[]
+  twoFactorChallenges TwoFactorChallenge[]
+
+  @@index([kycStatus])
+  @@map("users")
+}
+
+model KycDocument {
+  id           String          @id @default(uuid())
+  userId       String          @map("user_id")
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         KycDocumentType
+  storageKey   String          @map("storage_key")
+  originalName String          @map("original_name")
+  mimeType     String          @map("mime_type")
+  sizeBytes    Int             @map("size_bytes")
+  uploadedAt   DateTime        @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  @@index([userId, type])
+  @@map("kyc_documents")
+}
+
+model TwoFactorChallenge {
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method     TwoFactorMethod
+  codeHash   String?         @map("code_hash")
+  expiresAt  DateTime        @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime?       @map("consumed_at") @db.Timestamptz(6)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@map("two_factor_challenges")
+}
