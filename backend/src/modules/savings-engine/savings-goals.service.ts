@@ -97,6 +97,7 @@ export class SavingsGoalsService {
         installments: { orderBy: { sequence: 'asc' } },
         product: { include: { shop: { include: { seller: true } } } },
         user: true,
+        deposits: { orderBy: { createdAt: 'desc' } },
       },
     });
 
