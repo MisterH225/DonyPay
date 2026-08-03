@@ -52,6 +52,9 @@ describe('Ledger integrity (integration)', () => {
 
   it('refuse UPDATE et DELETE sur ledger_entries (trigger DB)', async () => {
     if (!dbAvailable) {
+      if (process.env.REQUIRE_INTEGRATION_DB === '1') {
+        throw new Error('DATABASE_URL injoignable (REQUIRE_INTEGRATION_DB=1)');
+      }
       return console.warn('SKIP: DATABASE_URL injoignable');
     }
 
@@ -97,6 +100,9 @@ describe('Ledger integrity (integration)', () => {
 
   it('garantit somme des écritures = getBalance = dernier balance_after', async () => {
     if (!dbAvailable) {
+      if (process.env.REQUIRE_INTEGRATION_DB === '1') {
+        throw new Error('DATABASE_URL injoignable (REQUIRE_INTEGRATION_DB=1)');
+      }
       return console.warn('SKIP: DATABASE_URL injoignable');
     }
 

@@ -29,4 +29,3 @@ import { AdminModule } from './modules/admin/admin.module';
   providers: [AppService],
 })
 export class AppModule {}
-

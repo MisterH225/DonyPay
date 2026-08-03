@@ -105,8 +105,7 @@ export class KycService {
       data: {
         externalKycId: result.externalId,
         kycStatus: result.status,
-        kycReviewedAt:
-          result.status === KycStatus.pending ? null : new Date(),
+        kycReviewedAt: result.status === KycStatus.pending ? null : new Date(),
       },
     });
 
@@ -227,8 +226,7 @@ export class KycService {
       data: {
         kycStatus: result.status,
         kycRejectReason: result.rejectReason ?? null,
-        kycReviewedAt:
-          result.status === KycStatus.pending ? null : new Date(),
+        kycReviewedAt: result.status === KycStatus.pending ? null : new Date(),
       },
     });
 

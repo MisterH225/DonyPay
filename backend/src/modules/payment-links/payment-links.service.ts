@@ -58,9 +58,7 @@ export class PaymentLinksService {
     });
 
     if (!installment) {
-      throw new NotFoundException(
-        `Installment ${dto.installmentId} not found`,
-      );
+      throw new NotFoundException(`Installment ${dto.installmentId} not found`);
     }
 
     if (installment.goal.mode !== SavingsMode.schedule) {

@@ -25,7 +25,10 @@ export class AdminApiKeyGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const provided =
       request.header('x-admin-key')?.trim() ||
-      request.header('authorization')?.replace(/^Bearer\s+/i, '').trim();
+      request
+        .header('authorization')
+        ?.replace(/^Bearer\s+/i, '')
+        .trim();
 
     if (!provided || !safeEqual(provided, expected)) {
       throw new UnauthorizedException('Invalid admin credentials');

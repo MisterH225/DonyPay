@@ -15,11 +15,7 @@ describe('ShopsService', () => {
     },
     shop: {
       findUnique: jest.fn(
-        async ({
-          where,
-        }: {
-          where: { id?: string; sellerId?: string };
-        }) => {
+        async ({ where }: { where: { id?: string; sellerId?: string } }) => {
           if (where.id) return shops.get(where.id) ?? null;
           if (where.sellerId) {
             return (
@@ -38,7 +34,7 @@ describe('ShopsService', () => {
           updatedAt: new Date(),
           ...data,
         };
-        shops.set(shop.id as string, shop);
+        shops.set(shop.id, shop);
         return shop;
       }),
     },

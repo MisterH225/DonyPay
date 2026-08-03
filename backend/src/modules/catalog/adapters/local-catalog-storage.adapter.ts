@@ -16,7 +16,10 @@ export class LocalCatalogStorageAdapter implements CatalogStoragePort {
   private readonly rootDir =
     process.env.CATALOG_UPLOAD_DIR ?? join(process.cwd(), 'uploads', 'catalog');
 
-  async storePhoto(shopId: string, file: CatalogFile): Promise<StoredCatalogFile> {
+  async storePhoto(
+    shopId: string,
+    file: CatalogFile,
+  ): Promise<StoredCatalogFile> {
     const dir = join(this.rootDir, shopId, 'photos');
     await mkdir(dir, { recursive: true });
 

@@ -121,10 +121,7 @@ export class IdentityController {
   }
 
   @Post('users/:id/2fa/verify')
-  verify2fa(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: Verify2faDto,
-  ) {
+  verify2fa(@Param('id', ParseUUIDPipe) id: string, @Body() dto: Verify2faDto) {
     return this.twoFactorService.verify(id, dto.code);
   }
 }

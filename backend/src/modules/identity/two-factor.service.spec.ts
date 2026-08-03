@@ -108,9 +108,9 @@ describe('TwoFactorService', () => {
     user.twoFactorMethod = TwoFactorMethod.totp;
     (usersService.findById as jest.Mock).mockResolvedValue({ ...user });
 
-    await expect(service.confirmTotp('user-1', '000000')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.confirmTotp('user-1', '000000'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('enables SMS 2FA and verifies a sent code', async () => {

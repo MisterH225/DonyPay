@@ -10,10 +10,7 @@ import {
   type LedgerAccount,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import {
-  LedgerMetadata,
-  LedgerPort,
-} from '../ports/ledger.port';
+import { LedgerMetadata, LedgerPort } from '../ports/ledger.port';
 
 const SYSTEM_CLEARING_USER_ID = '__system_clearing__';
 
@@ -67,7 +64,7 @@ export class MockLedgerAdapter implements LedgerPort {
             ...metadata,
             operation: 'deposit',
             counterpartAccountId: clearing.id,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -82,7 +79,7 @@ export class MockLedgerAdapter implements LedgerPort {
             ...metadata,
             operation: 'deposit',
             counterpartAccountId: account.id,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
     });
@@ -118,7 +115,7 @@ export class MockLedgerAdapter implements LedgerPort {
           metadata: {
             operation: 'withdrawal',
             counterpartAccountId: clearing.id,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -132,7 +129,7 @@ export class MockLedgerAdapter implements LedgerPort {
           metadata: {
             operation: 'withdrawal',
             counterpartAccountId: account.id,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
     });
@@ -164,7 +161,9 @@ export class MockLedgerAdapter implements LedgerPort {
     const account = await this.requireAccount(accountId);
 
     if (account.kind !== LedgerAccountKind.savings) {
-      throw new BadRequestException('Operation allowed on savings accounts only');
+      throw new BadRequestException(
+        'Operation allowed on savings accounts only',
+      );
     }
 
     return account;

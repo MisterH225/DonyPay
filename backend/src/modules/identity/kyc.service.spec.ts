@@ -122,9 +122,9 @@ describe('KycService', () => {
   });
 
   it('fails submit when KYC provider is not configured', async () => {
-    await expect(service.submitToExternalProvider('user-1')).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
-    );
+    await expect(
+      service.submitToExternalProvider('user-1'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
   it('submits to external KYC provider when bound', async () => {
@@ -172,8 +172,8 @@ describe('KycService', () => {
       provider,
     );
 
-    await expect(service.submitToExternalProvider('user-1')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.submitToExternalProvider('user-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

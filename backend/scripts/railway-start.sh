@@ -28,5 +28,13 @@ if ! npx prisma migrate deploy; then
   exit 1
 fi
 
+# Staging / démo : peupler utilisateurs, boutique, plans (sans Mobile Money réel).
+if [ "${SEED_DEMO:-}" = "true" ] || [ "${SEED_DEMO:-}" = "1" ]; then
+  echo "[railway-start] SEED_DEMO enabled — running prisma db seed…"
+  if ! npx prisma db seed; then
+    echo "[railway-start] WARN: seed failed (non-bloquant)."
+  fi
+fi
+
 echo "[railway-start] Starting NestJS on 0.0.0.0:${PORT:-3000}"
 exec node dist/main.js

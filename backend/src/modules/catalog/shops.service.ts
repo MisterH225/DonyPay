@@ -23,9 +23,7 @@ export class ShopsService {
       where: { sellerId: dto.sellerId },
     });
     if (existing) {
-      throw new ConflictException(
-        `Seller ${dto.sellerId} already owns a shop`,
-      );
+      throw new ConflictException(`Seller ${dto.sellerId} already owns a shop`);
     }
 
     return this.prisma.shop.create({

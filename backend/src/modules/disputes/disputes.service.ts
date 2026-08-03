@@ -35,10 +35,7 @@ const ALLOWED_TRANSITIONS: Record<DisputeStatus, DisputeStatus[]> = {
     DisputeStatus.resolved,
     DisputeStatus.rejected,
   ],
-  [DisputeStatus.in_progress]: [
-    DisputeStatus.resolved,
-    DisputeStatus.rejected,
-  ],
+  [DisputeStatus.in_progress]: [DisputeStatus.resolved, DisputeStatus.rejected],
   [DisputeStatus.resolved]: [],
   [DisputeStatus.rejected]: [],
 };

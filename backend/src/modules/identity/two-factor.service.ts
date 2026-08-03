@@ -128,10 +128,7 @@ export class TwoFactorService {
       },
     });
 
-    await this.smsSender.sendSms(
-      user.phone,
-      `Votre code DonyPay : ${code}`,
-    );
+    await this.smsSender.sendSms(user.phone, `Votre code DonyPay : ${code}`);
 
     return {
       userId,

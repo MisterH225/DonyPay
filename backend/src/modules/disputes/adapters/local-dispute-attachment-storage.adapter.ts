@@ -12,9 +12,7 @@ import {
 } from '../ports/dispute-attachment-storage.port';
 
 @Injectable()
-export class LocalDisputeAttachmentStorageAdapter
-  implements DisputeAttachmentStoragePort
-{
+export class LocalDisputeAttachmentStorageAdapter implements DisputeAttachmentStoragePort {
   private readonly rootDir =
     process.env.DISPUTE_UPLOAD_DIR ??
     join(process.cwd(), 'uploads', 'disputes');

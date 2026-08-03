@@ -18,6 +18,8 @@
     "db:down": "docker compose down",
     "prisma:generate": "npm run prisma:generate --workspace=backend",
     "prisma:migrate": "npm run prisma:migrate --workspace=backend",
+    "db:seed": "npm run prisma:seed --workspace=backend",
+    "ci": "npm run typecheck --workspace=backend && npm run test --workspace=backend && npm run backend:build && npm run typecheck --workspace=admin && npm run admin:build && npm run typecheck --workspace=mobile",
     "railway:build": "npm ci && npm run backend:build",
     "admin:dev": "npm run dev --workspace=admin",
     "admin:build": "npm run build --workspace=admin"

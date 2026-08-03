@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { CreatePaymentLinkDto } from './dto/create-payment-link.dto';
 import { MobileMoneyCallbackDto } from './dto/mobile-money-callback.dto';
@@ -53,10 +45,7 @@ export class PaymentLinksController {
 
   /** Alias HTML explicite pour ouverture navigateur. */
   @Get('public/:token/page')
-  async getPublicHtmlPage(
-    @Param('token') token: string,
-    @Res() res: Response,
-  ) {
+  async getPublicHtmlPage(@Param('token') token: string, @Res() res: Response) {
     const page = await this.paymentLinksService.getPublicPage(token);
     res
       .status(200)

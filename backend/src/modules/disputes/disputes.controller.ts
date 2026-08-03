@@ -85,10 +85,7 @@ export class DisputesController {
   }
 
   @Post(':id/rating')
-  rate(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: RateDisputeDto,
-  ) {
+  rate(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RateDisputeDto) {
     return this.disputesService.rate(id, dto);
   }
 }
