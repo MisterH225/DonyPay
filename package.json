@@ -11,11 +11,13 @@
     "backend:dev": "npm run start:dev --workspace=backend",
     "backend:build": "npm run build --workspace=backend",
     "backend:test": "npm run test --workspace=backend",
+    "backend:start:prod": "npm run start:prod --workspace=backend",
     "mobile:start": "npm run start --workspace=mobile",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "prisma:generate": "npm run prisma:generate --workspace=backend",
-    "prisma:migrate": "npm run prisma:migrate --workspace=backend"
+    "prisma:migrate": "npm run prisma:migrate --workspace=backend",
+    "railway:build": "npm ci && npm run backend:build"
   },
   "engines": {
     "node": ">=20"

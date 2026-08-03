@@ -1,0 +1,18 @@
+# DonyPay backend — déploiement Railway
+# Projet: 90de654d-6836-45a1-b750-c61b52aa29b3
+#
+# Dans le dashboard Railway :
+# - Root Directory: `/` (racine du monorepo)
+# - Builder: Dockerfile (ce fichier)
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = ["backend/**", "package.json", "package-lock.json"]
+
+[deploy]
+# startCommand omis → utilise le CMD du Dockerfile (migrate + node)
+healthcheckPath = "/api"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
