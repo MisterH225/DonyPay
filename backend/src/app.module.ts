@@ -10,6 +10,7 @@ import { PaymentLinksModule } from './modules/payment-links/payment-links.module
 import { LedgerAdapterModule } from './modules/ledger-adapter/ledger-adapter.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -22,8 +23,10 @@ import { DisputesModule } from './modules/disputes/disputes.module';
     LedgerAdapterModule,
     NotificationsModule,
     DisputesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

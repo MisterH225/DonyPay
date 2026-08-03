@@ -167,6 +167,27 @@ export class DisputesService {
     });
   }
 
+  /** Inbox admin — tous les litiges, filtre status optionnel. */
+  async listAll(status?: DisputeStatus) {
+    return this.prisma.dispute.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        openedBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        rating: true,
+        _count: { select: { messages: true, attachments: true } },
+      },
+    });
+  }
+
   async updateStatus(
     id: string,
     dto: UpdateDisputeStatusDto,

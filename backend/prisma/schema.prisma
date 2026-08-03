@@ -35,11 +35,18 @@ enum TwoFactorMethod {
   sms
 }
 
+/// Rôle applicatif — `admin` réservé à la console ops (jamais exposé au mobile).
+enum UserRole {
+  user
+  admin
+}
+
 model User {
   id               String           @id @default(uuid())
   email            String           @unique
   phone            String?
   type             UserType
+  role             UserRole         @default(user)
   firstName        String?          @map("first_name")
   lastName         String?          @map("last_name")
   companyName      String?          @map("company_name")
@@ -65,6 +72,7 @@ model User {
   disputeRatings      DisputeRating[]
 
   @@index([kycStatus])
+  @@index([role])
   @@map("users")
 }
 
