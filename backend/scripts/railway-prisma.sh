@@ -2,6 +2,16 @@
 # Résout le binaire Prisma dans le layout monorepo (hoisté ou local workspace).
 set -eu
 
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "[railway] ERROR: DATABASE_URL est vide ou absente."
+  echo "[railway] Dashboard → service API → Variables :"
+  echo "[railway]   1) Ajoute un service Postgres dans CE projet Railway"
+  echo "[railway]   2) DATABASE_URL = référence vers le Postgres (bouton Variable Reference)"
+  echo "[railway]      ex. \${{Postgres.DATABASE_URL}} — le nom doit matcher le service exact"
+  echo "[railway]   3) Si DATABASE_URL existe déjà avec une valeur vide : supprime-la et recrée la référence"
+  exit 1
+fi
+
 resolve_prisma() {
   if command -v prisma >/dev/null 2>&1; then
     command -v prisma
