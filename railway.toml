@@ -23,9 +23,9 @@ watchPatterns = [
 ]
 
 [deploy]
-# startCommand omis → utilise le CMD du Dockerfile (migrate + node via railway-start.sh)
-# Railway n’accepte qu’UN seul élément dans preDeployCommand (commande shell complète).
-preDeployCommand = ["sh /app/backend/scripts/railway-prisma.sh migrate deploy"]
+# startCommand omis → utilise le CMD du Dockerfile (railway-start.sh : wait DB + migrate + nest)
+# Pas de preDeployCommand : migrate est déjà dans railway-start.sh, et un preDeploy
+# qui tourne avec DATABASE_URL vide fait échouer le deploy avant les logs utiles.
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

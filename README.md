@@ -64,6 +64,7 @@ Config versionnée : `railway.toml` + `backend/Dockerfile` + `backend/scripts/ra
 
 - **Build OK + healthcheck `service unavailable`** → le conteneur ne parle jamais HTTP. Cause #1 : `DATABASE_URL` injoignable (migrate/Prisma crash avant `listen`). Regarde les **Deploy Logs** (pas seulement Build Logs) pour `[railway-start] ERROR`.
 - `PORT=5432` → port Postgres, pas Nest → healthcheck KO
+- **`DATABASE_URL resolved to an empty string` (Prisma P1012)** → la variable existe mais est **vide**. Cause typique : référence `${{Postgres.DATABASE_URL}}` alors que le service Postgres a un **autre nom**, ou valeur littérale vide. Fix : Variables → supprimer `DATABASE_URL` → Add Variable → **Variable Reference** → choisir le Postgres du projet → `DATABASE_URL`.
 - `DATABASE_URL` → `db.xxx.supabase.co:5432` souvent **injoignable** depuis Railway → Postgres Railway ou **Session pooler** Supabase
 - Push sur `main` sans redeploy → soit le repo GitHub n’est pas connecté au service Railway, soit le job CI `Deploy staging` a skip (`RAILWAY_TOKEN` absent) / CI rouge. Les logs du 2026-08-03 (`uploading snapshot`) viennent de `railway up` (CI), pas d’un git push.
 - CI rouge (`prisma: not found`) → le job Deploy est skip ; corrigé via `npm run prisma:migrate:deploy --workspace=backend`
