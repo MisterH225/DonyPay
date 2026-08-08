@@ -1,3 +1,5 @@
+# Postgres local pour dev + tests e2e/intégration (truncate entre tests).
+# `npm run db:up` puis `npm run test:e2e --workspace=backend`
 services:
   postgres:
     image: postgres:17-alpine

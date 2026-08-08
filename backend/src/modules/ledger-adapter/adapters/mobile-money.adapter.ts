@@ -426,6 +426,11 @@ export class MobileMoneyAdapter implements LedgerPort {
     collection: MobileMoneyCollection,
     success: boolean,
   ): CinetPayWebhookBody {
+    const prefix = '225';
+    const national = collection.phone
+      .replace(/^\+/, '')
+      .replace(new RegExp(`^${prefix}`), '');
+
     return {
       cpm_site_id: this.getSiteId(),
       cpm_trans_id: collection.providerRef,
@@ -434,8 +439,9 @@ export class MobileMoneyAdapter implements LedgerPort {
       cpm_currency: collection.currency,
       signature: 'sandbox_signature',
       payment_method: collection.operator ?? 'OM',
-      cel_phone_num: collection.phone.replace(/^\+/, ''),
-      cpm_phone_prefixe: '225',
+      // Numéro national seul — le préfixe est dans cpm_phone_prefixe.
+      cel_phone_num: national,
+      cpm_phone_prefixe: prefix,
       cpm_language: 'fr',
       cpm_version: 'V4',
       cpm_payment_config: 'SINGLE',
