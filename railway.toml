@@ -10,6 +10,8 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile"
+# Patterns larges : un push main qui ne touche que le workflow ne doit pas
+# empêcher un redeploy si le Dockerfile / scripts changent.
 watchPatterns = [
   "backend/**",
   "admin/package.json",
@@ -17,6 +19,7 @@ watchPatterns = [
   "package.json",
   "package-lock.json",
   "railway.toml",
+  "nixpacks.toml",
 ]
 
 [deploy]
