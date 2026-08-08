@@ -18,6 +18,15 @@ describe('AppController (e2e)', () => {
         $disconnect: jest.fn(),
         onModuleInit: jest.fn(),
         onModuleDestroy: jest.fn(),
+        // AdminService.onModuleInit → ensureSystemAdmin (ADMIN_API_KEY en CI)
+        user: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'admin-1',
+            email: 'admin@donypay.internal',
+            role: 'admin',
+          }),
+          create: jest.fn(),
+        },
       })
       .compile();
 

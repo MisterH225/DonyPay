@@ -33,25 +33,40 @@ Sans `RAILWAY_TOKEN`, le job deploy est un no-op (notice) — tu peux aussi acti
 
 Projet Railway : `90de654d-6836-45a1-b750-c61b52aa29b3`
 
-Config versionnée : `railway.toml` + `backend/Dockerfile`.
+Config versionnée : `railway.toml` + `backend/Dockerfile` + `backend/scripts/railway-start.sh`.
 
-Dans le service Railway :
-- **Root Directory** : `/` (racine du monorepo)
-- **Builder** : Dockerfile (`backend/Dockerfile`)
-- Healthcheck : `GET /api/health`
+### Checklist service API (dashboard)
 
-### Variables (service API — pas le service Postgres)
+1. **Root Directory** : `/` (racine du monorepo) — pas `backend/`
+2. **Builder** : Dockerfile (`backend/Dockerfile`) — pas Nixpacks si le Dockerfile est détecté
+3. **Postgres** : ajouter un service Postgres dans le même projet Railway
+4. Variables du service API :
 
 | Variable | Valeur |
 | --- | --- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence vers le service Postgres Railway) |
-| `PORT` | **ne pas définir** (Railway l’injecte ; surtout pas `5432`) |
-| `SEED_DEMO` | `true` sur staging pour peupler le parcours démo au boot |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence Railway, pas une URL Supabase hardcodée) |
+| `PORT` | **supprimer** si définie (Railway l’injecte ; jamais `5432`) |
+| `HOST` | optionnel (`0.0.0.0` par défaut dans l’image) |
+| `SEED_DEMO` | `true` pour peupler le parcours démo au boot |
 | `ADMIN_API_KEY` | clé console admin |
 
-Pièges fréquents :
-- `PORT=5432` → c’est le port Postgres, pas celui de Nest
-- `DATABASE_URL` pointant vers `db.xxx.supabase.co:5432` → souvent **injoignable** depuis Railway (utiliser Postgres Railway, ou le **pooler** Supabase)
+5. Healthcheck : `GET /api/health` (déjà dans `railway.toml`, timeout 300s)
+6. Déployer → ouvrir les **Deploy Logs** : tu dois voir `Running prisma migrate deploy` puis `Listening on http://0.0.0.0:<PORT>/api`
+
+### Déployer depuis GitHub Actions
+
+1. Crée un token : [railway.com/account/tokens](https://railway.com/account/tokens)
+2. GitHub → Settings → Secrets → Actions → `RAILWAY_TOKEN`
+3. Variables optionnelles : `RAILWAY_PROJECT_ID`, `RAILWAY_SERVICE_ID`, `RAILWAY_ENVIRONMENT` (`production` par défaut)
+4. Push sur `main` **ou** Actions → CI → Run workflow → `deploy=true`
+
+### Pièges fréquents
+
+- **Build OK + healthcheck `service unavailable`** → le conteneur ne parle jamais HTTP. Cause #1 : `DATABASE_URL` injoignable (migrate/Prisma crash avant `listen`). Regarde les **Deploy Logs** (pas seulement Build Logs) pour `[railway-start] ERROR`.
+- `PORT=5432` → port Postgres, pas Nest → healthcheck KO
+- `DATABASE_URL` → `db.xxx.supabase.co:5432` souvent **injoignable** depuis Railway → Postgres Railway ou **Session pooler** Supabase
+- Push sur `main` sans redeploy → soit le repo GitHub n’est pas connecté au service Railway, soit le job CI `Deploy staging` a skip (`RAILWAY_TOKEN` absent) / CI rouge. Les logs du 2026-08-03 (`uploading snapshot`) viennent de `railway up` (CI), pas d’un git push.
+- CI rouge (`prisma: not found`) → le job Deploy est skip ; corrigé via `npm run prisma:migrate:deploy --workspace=backend`
 
 ## Prérequis
 

@@ -14,7 +14,11 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit(): Promise<void> {
-    const maxAttempts = Number(process.env.PRISMA_CONNECT_RETRIES ?? 10);
+    // Sur Railway, laisser plus de temps (healthcheck ~5 min) avant d’abandonner.
+    const defaultRetries = process.env.RAILWAY_ENVIRONMENT ? 20 : 10;
+    const maxAttempts = Number(
+      process.env.PRISMA_CONNECT_RETRIES ?? defaultRetries,
+    );
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -33,6 +37,9 @@ export class PrismaService
       }
     }
 
+    this.logger.error(
+      'Prisma could not connect after all retries — Nest will not listen. Check DATABASE_URL (use ${{Postgres.DATABASE_URL}} on Railway).',
+    );
     throw lastError;
   }
 
