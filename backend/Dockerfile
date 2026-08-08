@@ -28,7 +28,8 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV PATH="/app/node_modules/.bin:/app/backend/node_modules/.bin:${PATH}"
 
 RUN apt-get update -qq \
   && apt-get install -y -qq openssl ca-certificates \
@@ -40,11 +41,12 @@ COPY --from=build --chown=donypay:donypay /app/node_modules ./node_modules
 COPY --from=build --chown=donypay:donypay /app/backend ./backend
 COPY --from=build --chown=donypay:donypay /app/mobile/package.json ./mobile/package.json
 
-RUN chmod +x /app/backend/scripts/railway-start.sh
+RUN chmod +x /app/backend/scripts/railway-start.sh \
+  /app/backend/scripts/railway-prisma.sh
 
 USER donypay
 WORKDIR /app/backend
 EXPOSE 3000
 
-# Migrations puis Nest — écoute 0.0.0.0 (voir main.ts)
+# Migrations puis Nest — écoute 0.0.0.0:${PORT} (voir main.ts)
 CMD ["sh", "./scripts/railway-start.sh"]

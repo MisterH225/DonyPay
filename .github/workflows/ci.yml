@@ -5,6 +5,16 @@ on:
     branches: [main, staging]
   pull_request:
     branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Forcer un deploy Railway staging après CI"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -51,7 +61,8 @@ jobs:
       - name: Prisma generate + migrate
         run: |
           npm run prisma:generate --workspace=backend
-          npx prisma migrate deploy --schema=backend/prisma/schema.prisma
+          # prisma n'est pas hoisté à la racine des workspaces → via workspace
+          npm run prisma:migrate:deploy --workspace=backend
 
       - name: Typecheck backend
         run: npm run typecheck --workspace=backend
@@ -117,7 +128,9 @@ jobs:
   deploy-staging:
     name: Deploy staging (Railway)
     needs: [backend, admin, mobile]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    if: >
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'))
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true')
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -139,17 +152,22 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${RAILWAY_TOKEN:-}" ]; then
-            echo "::notice::RAILWAY_TOKEN non configuré — skip deploy."
-            echo "Ajoute le secret RAILWAY_TOKEN (et vars RAILWAY_*) pour activer le déploiement auto."
-            echo "Sinon active l'auto-deploy GitHub dans le dashboard Railway sur main/staging."
+            MSG="RAILWAY_TOKEN manquant. Ajoute le secret GitHub Actions, ou active l'auto-deploy GitHub→Railway dans le dashboard."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::error::$MSG"
+              exit 1
+            fi
+            echo "::notice::$MSG"
             exit 0
           fi
           PROJECT_ID="${RAILWAY_PROJECT_ID:-90de654d-6836-45a1-b750-c61b52aa29b3}"
-          ENVIRONMENT="${RAILWAY_ENVIRONMENT:-staging}"
+          ENVIRONMENT="${RAILWAY_ENVIRONMENT:-production}"
           ARGS=(link --project "$PROJECT_ID" --environment "$ENVIRONMENT")
           if [ -n "${RAILWAY_SERVICE_ID:-}" ]; then
             ARGS+=(--service "$RAILWAY_SERVICE_ID")
           fi
+          echo "Linking Railway project=${PROJECT_ID} env=${ENVIRONMENT} service=${RAILWAY_SERVICE_ID:-default}"
           railway "${ARGS[@]}"
           railway up --ci --detach
-          echo "Staging deploy triggered on Railway (${ENVIRONMENT})."
+          echo "Deploy triggered on Railway (${ENVIRONMENT})."
+          echo "Vérifie le dashboard → Deployments → logs + GET /api/health"

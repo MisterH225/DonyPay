@@ -4,6 +4,8 @@
 # Dans le dashboard Railway :
 # - Root Directory: `/` (racine du monorepo)
 # - Builder: Dockerfile (ce fichier)
+# - Ne PAS définir PORT manuellement (Railway l’injecte)
+# - DATABASE_URL = ${{Postgres.DATABASE_URL}} (service Postgres du même projet)
 
 [build]
 builder = "DOCKERFILE"
@@ -19,6 +21,8 @@ watchPatterns = [
 
 [deploy]
 # startCommand omis → utilise le CMD du Dockerfile (migrate + node)
+# preDeployCommand : migrate une fois avant bascule trafic (idempotent avec le start)
+preDeployCommand = ["sh", "./scripts/railway-prisma.sh", "migrate", "deploy"]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
