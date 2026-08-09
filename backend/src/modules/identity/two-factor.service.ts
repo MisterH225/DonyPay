@@ -130,13 +130,18 @@ export class TwoFactorService {
 
     await this.smsSender.sendSms(user.phone, `Votre code DonyPay : ${code}`);
 
+    const returnDebugOtp =
+      process.env.NODE_ENV !== 'production' ||
+      process.env.AUTH_RETURN_DEBUG_OTP === 'true' ||
+      process.env.AUTH_RETURN_DEBUG_OTP === '1';
+
     return {
       userId,
       method: TwoFactorMethod.sms,
       expiresAt,
       message: 'SMS code sent',
-      // Staging / local uniquement — jamais en production.
-      ...(process.env.NODE_ENV !== 'production' ? { debugCode: code } : {}),
+      // Local / démo Railway uniquement — ne pas activer AUTH_RETURN_DEBUG_OTP en prod réelle.
+      ...(returnDebugOtp ? { debugCode: code } : {}),
     };
   }
 
