@@ -5,6 +5,10 @@
     "test",
     "dist",
     "**/*spec.ts",
-    "**/testing/**"
-  ]
+    "**/testing/**",
+    "prisma"
+  ],
+  "compilerOptions": {
+    "rootDir": "./src"
+  }
 }

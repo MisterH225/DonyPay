@@ -82,11 +82,21 @@ if [ "${SEED_DEMO:-}" = "true" ] || [ "${SEED_DEMO:-}" = "1" ]; then
   fi
 fi
 
-if [ ! -f dist/main.js ]; then
-  echo "[railway-start] ERROR: dist/main.js introuvable — le build Docker a échoué ?"
+# Nest + rootDir=src → dist/main.js ; ancien layout nodenext → dist/src/main.js
+MAIN_JS=""
+for candidate in dist/main.js dist/src/main.js; do
+  if [ -f "$candidate" ]; then
+    MAIN_JS="$candidate"
+    break
+  fi
+done
+
+if [ -z "$MAIN_JS" ]; then
+  echo "[railway-start] ERROR: main.js introuvable sous dist/ — le build Docker a échoué ?"
   ls -la dist 2>/dev/null || true
+  find dist -name 'main.js' 2>/dev/null || true
   exit 1
 fi
 
-echo "[railway-start] Starting NestJS → http://${HOST}:${PORT:-3000}/api/health"
-exec node dist/main.js
+echo "[railway-start] Starting NestJS ($MAIN_JS) → http://${HOST}:${PORT:-3000}/api/health"
+exec node "$MAIN_JS"
