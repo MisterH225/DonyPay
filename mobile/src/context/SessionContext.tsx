@@ -54,7 +54,7 @@ async function ensureUser(): Promise<User> {
   const code = enrolled.debugCode;
   if (!code) {
     throw new Error(
-      'Code OTP indisponible (debugCode) — activez NODE_ENV≠production côté API',
+      'Code OTP indisponible (debugCode) — sur Railway ajoute AUTH_RETURN_DEBUG_OTP=true (démo)',
     );
   }
 

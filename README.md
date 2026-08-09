@@ -47,11 +47,28 @@ Config versionnée : `railway.toml` + `backend/Dockerfile` + `backend/scripts/ra
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence Railway, pas une URL Supabase hardcodée) |
 | `PORT` | **supprimer** si définie (Railway l’injecte ; jamais `5432`) |
 | `HOST` | optionnel (`0.0.0.0` par défaut dans l’image) |
+| `JWT_ACCESS_SECRET` | secret fort (auth mobile) |
+| `JWT_REFRESH_SECRET` | autre secret fort |
+| `AUTH_RETURN_DEBUG_OTP` | `true` pour la démo mobile (OTP dans la réponse API) |
 | `SEED_DEMO` | `true` pour peupler le parcours démo au boot |
 | `ADMIN_API_KEY` | clé console admin |
+| `PAYMENT_LINK_PUBLIC_BASE_URL` | `https://<domaine>/api/payment-links/public` |
 
-5. Healthcheck : `GET /api/health` (déjà dans `railway.toml`, timeout 300s)
-6. Déployer → ouvrir les **Deploy Logs** : tu dois voir `Running prisma migrate deploy` puis `Listening on http://0.0.0.0:<PORT>/api`
+5. **Networking** : Settings → Networking → **Generate Domain** (URL publique HTTPS)
+6. Healthcheck : `GET /api/health` (déjà dans `railway.toml`, timeout 300s)
+7. Déployer → Deploy Logs : `Running prisma migrate deploy` puis `Listening…`
+
+### Mobile → API Railway
+
+1. Copie le domaine public (ex. `https://donypay-production.up.railway.app`)
+2. Dans `mobile/.env` :
+
+```bash
+EXPO_PUBLIC_API_URL=https://TON-DOMAINE.up.railway.app/api
+```
+
+3. Redémarre Expo (`npx expo start -c`)
+4. Vérifie d’abord dans le navigateur : `https://TON-DOMAINE.up.railway.app/api/health` → `{"status":"ok"}`
 
 ### Déployer depuis GitHub Actions
 
