@@ -27,6 +27,12 @@ env:
   ADMIN_PASSWORD: ci-admin-password
   ADMIN_SESSION_SECRET: ci-admin-session
   DONYPAY_API_URL: http://localhost:3000/api
+  JWT_ACCESS_SECRET: ci-access-secret
+  JWT_REFRESH_SECRET: ci-refresh-secret
+  CINETPAY_SANDBOX: "true"
+  CINETPAY_SECRET_KEY: cinetpay_sandbox_secret
+  CINETPAY_SITE_ID: sandbox_site
+  CINETPAY_API_KEY: sandbox_api_key
 
 jobs:
   backend:
@@ -75,6 +81,8 @@ jobs:
         run: npm run test --workspace=backend -- --ci --passWithNoTests
 
       - name: E2E tests
+        env:
+          REQUIRE_E2E_DB: "1"
         run: npm run test:e2e --workspace=backend -- --ci
 
       - name: Integration tests

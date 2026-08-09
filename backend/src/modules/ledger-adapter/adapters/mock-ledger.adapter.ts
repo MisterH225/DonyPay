@@ -13,6 +13,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { LedgerMetadata, LedgerPort } from '../ports/ledger.port';
 
 const SYSTEM_CLEARING_USER_ID = '__system_clearing__';
+const SERIALIZABLE_MAX_ATTEMPTS = 3;
+const SERIALIZABLE_BACKOFF_MS = 25;
 
 /**
  * Adaptateur mock : simule un ledger bancaire en DB locale (Prisma)
@@ -49,7 +51,7 @@ export class MockLedgerAdapter implements LedgerPort {
     const account = await this.requireSavingsAccount(accountId);
     const clearing = await this.ensureClearingAccount();
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.withSerializableRetry(async (tx) => {
       const savingsBalance = await this.latestBalance(tx, account.id);
       const clearingBalance = await this.latestBalance(tx, clearing.id);
 
@@ -96,7 +98,7 @@ export class MockLedgerAdapter implements LedgerPort {
     const account = await this.requireSavingsAccount(accountId);
     const clearing = await this.ensureClearingAccount();
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.withSerializableRetry(async (tx) => {
       const savingsBalance = await this.latestBalance(tx, account.id);
 
       if (savingsBalance.lessThan(decimalAmount)) {
@@ -133,6 +135,31 @@ export class MockLedgerAdapter implements LedgerPort {
         },
       });
     });
+  }
+
+  private async withSerializableRetry<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= SERIALIZABLE_MAX_ATTEMPTS; attempt++) {
+      try {
+        return await this.prisma.$transaction(fn, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        lastError = error;
+        if (
+          !isSerializationFailure(error) ||
+          attempt === SERIALIZABLE_MAX_ATTEMPTS
+        ) {
+          throw error;
+        }
+        await sleep(SERIALIZABLE_BACKOFF_MS * attempt);
+      }
+    }
+
+    throw lastError;
   }
 
   private toPositiveAmount(amount: number): Prisma.Decimal {
@@ -195,10 +222,46 @@ export class MockLedgerAdapter implements LedgerPort {
   ): Promise<Prisma.Decimal> {
     const lastEntry = await client.ledgerEntry.findFirst({
       where: { accountId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [{ sequence: 'desc' }],
       select: { balanceAfter: true },
     });
 
     return lastEntry?.balanceAfter ?? new Prisma.Decimal(0);
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Conflit de sérialisation Postgres (SQLSTATE 40001) / Prisma P2034. */
+export function isSerializationFailure(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2034') {
+      return true;
+    }
+    const metaCode = (error.meta as { code?: string } | undefined)?.code;
+    if (metaCode === '40001') {
+      return true;
+    }
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    String((error as { code: unknown }).code) === '40001'
+  ) {
+    return true;
+  }
+
+  const cause =
+    typeof error === 'object' && error !== null && 'cause' in error
+      ? (error as { cause: unknown }).cause
+      : undefined;
+  if (cause && cause !== error) {
+    return isSerializationFailure(cause);
+  }
+
+  return false;
 }

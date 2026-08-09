@@ -7,6 +7,7 @@ import {
   Post,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { MobileMoneyAdapter } from './adapters/mobile-money.adapter';
 import { InitiateMobileMoneyCollectionDto } from './dto/initiate-mobile-money-collection.dto';
 import { SandboxSimulateCallbackDto } from './dto/sandbox-simulate-callback.dto';
@@ -20,6 +21,7 @@ import type { CinetPayWebhookBody } from './mobile-money/cinetpay.types';
 export class MobileMoneyWebhookController {
   constructor(private readonly mobileMoney: MobileMoneyAdapter) {}
 
+  /** Initie une collecte — réservé aux utilisateurs authentifiés. */
   @Post('collections')
   initiate(@Body() dto: InitiateMobileMoneyCollectionDto) {
     return this.mobileMoney.initiateCollection(dto);
@@ -31,10 +33,9 @@ export class MobileMoneyWebhookController {
   }
 
   /**
-   * Notification CinetPay.
-   * Header obligatoire : `x-token` (HMAC-SHA256).
-   * Sans signature valide → 401, aucun crédit ledger.
+   * Notification CinetPay — protégée par HMAC `x-token`, pas par JWT.
    */
+  @Public()
   @Post('webhook')
   webhook(
     @Body() body: CinetPayWebhookBody,

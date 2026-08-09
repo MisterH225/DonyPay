@@ -34,7 +34,7 @@ export class LedgerReadService {
 
     const last = await this.prisma.ledgerEntry.findFirst({
       where: { accountId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { sequence: 'desc' },
       select: { balanceAfter: true },
     });
 
@@ -50,7 +50,7 @@ export class LedgerReadService {
 
     return this.prisma.ledgerEntry.findMany({
       where: { accountId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { sequence: 'desc' },
       take: limit,
     });
   }

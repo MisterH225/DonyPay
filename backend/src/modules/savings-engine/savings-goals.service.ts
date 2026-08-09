@@ -19,6 +19,9 @@ import { NotificationsService } from '../notifications';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { RecordDepositDto } from './dto/record-deposit.dto';
 
+/** Délai indicatif de crédit Mobile Money après libération ledger. */
+const MOBILE_MONEY_REFUND_ETA = '24 à 72 heures';
+
 type GoalWithRelations = SavingsGoal & {
   installments: SavingsInstallment[];
   product: Product & {
@@ -36,11 +39,16 @@ export class SavingsGoalsService {
   ) {}
 
   async create(dto: CreateSavingsGoalDto): Promise<GoalWithRelations> {
+    if (!dto.userId) {
+      throw new BadRequestException('userId is required');
+    }
+    const userId = dto.userId;
+
     const user = await this.prisma.user.findUnique({
-      where: { id: dto.userId },
+      where: { id: userId },
     });
     if (!user) {
-      throw new NotFoundException(`User ${dto.userId} not found`);
+      throw new NotFoundException(`User ${userId} not found`);
     }
 
     const product = await this.prisma.product.findUnique({
@@ -54,11 +62,11 @@ export class SavingsGoalsService {
     const targetAmount = product.price;
     this.assertModeConfig(dto, targetAmount);
 
-    const ledgerAccountId = await this.ledger.openSavingsAccount(dto.userId);
+    const ledgerAccountId = await this.ledger.openSavingsAccount(userId);
 
     const goal = await this.prisma.savingsGoal.create({
       data: {
-        userId: dto.userId,
+        userId,
         productId: dto.productId,
         mode: dto.mode,
         targetAmount,
@@ -184,6 +192,22 @@ export class SavingsGoalsService {
   }
 
   async recordDeposit(goalId: string, dto: RecordDepositDto) {
+    return this.applyDeposit(goalId, dto, { creditLedger: true });
+  }
+
+  /**
+   * Applique les effets métier d’un dépôt déjà crédité au ledger
+   * (ex. webhook Mobile Money HMAC) — sans second `recordDeposit` ledger.
+   */
+  async applyDepositAlreadyOnLedger(goalId: string, dto: RecordDepositDto) {
+    return this.applyDeposit(goalId, dto, { creditLedger: false });
+  }
+
+  private async applyDeposit(
+    goalId: string,
+    dto: RecordDepositDto,
+    options: { creditLedger: boolean },
+  ) {
     const goal = await this.findById(goalId);
 
     if (goal.status !== SavingsGoalStatus.active) {
@@ -220,17 +244,16 @@ export class SavingsGoalsService {
       }
     }
 
-    await this.ledger.recordDeposit(goal.ledgerAccountId, amount.toNumber(), {
-      goalId: goal.id,
-      productId: goal.productId,
-      installmentId: installment?.id,
-      mode: goal.mode,
-    });
+    if (options.creditLedger) {
+      await this.ledger.recordDeposit(goal.ledgerAccountId, amount.toNumber(), {
+        goalId: goal.id,
+        productId: goal.productId,
+        installmentId: installment?.id,
+        mode: goal.mode,
+      });
+    }
 
-    const newSaved = goal.savedAmount.add(amount);
-    const reached = newSaved.greaterThanOrEqualTo(goal.targetAmount);
-
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { updated, reached } = await this.prisma.$transaction(async (tx) => {
       if (installment) {
         await tx.savingsInstallment.update({
           where: { id: installment.id },
@@ -249,15 +272,27 @@ export class SavingsGoalsService {
         },
       });
 
-      return tx.savingsGoal.update({
+      // Incrément atomique côté DB — évite une valeur précalculée hors transaction.
+      await tx.savingsGoal.update({
         where: { id: goal.id },
-        data: {
-          savedAmount: newSaved,
-          status: reached
-            ? SavingsGoalStatus.ready_for_withdrawal
-            : SavingsGoalStatus.active,
-          readyAt: reached ? new Date() : null,
-        },
+        data: { savedAmount: { increment: amount } },
+      });
+
+      const current = await tx.savingsGoal.findUniqueOrThrow({
+        where: { id: goal.id },
+      });
+      const reached = current.savedAmount.greaterThanOrEqualTo(
+        current.targetAmount,
+      );
+
+      const updated = await tx.savingsGoal.update({
+        where: { id: goal.id },
+        data: reached
+          ? {
+              status: SavingsGoalStatus.ready_for_withdrawal,
+              readyAt: new Date(),
+            }
+          : {},
         include: {
           installments: { orderBy: { sequence: 'asc' } },
           product: { include: { shop: { include: { seller: true } } } },
@@ -265,6 +300,8 @@ export class SavingsGoalsService {
           deposits: { orderBy: { createdAt: 'desc' } },
         },
       });
+
+      return { updated, reached };
     });
 
     await this.notifications.notifyDepositReceived({
@@ -310,6 +347,31 @@ export class SavingsGoalsService {
       );
     }
 
+    const refundAmount = goal.savedAmount;
+    const hasRefund = refundAmount.greaterThan(0);
+
+    // Libérer les fonds avant toute mutation de statut.
+    if (hasRefund) {
+      await this.ledger.recordWithdrawal(
+        goal.ledgerAccountId,
+        refundAmount.toNumber(),
+      );
+
+      await this.notifications.notifyRefundInitiated({
+        userId: goal.userId,
+        phone: goal.user?.phone,
+        title: 'Remboursement en cours',
+        body: `Remboursement de ${refundAmount.toString()} XOF initié pour « ${goal.product.name} ». Le crédit Mobile Money est estimé sous ${MOBILE_MONEY_REFUND_ETA}.`,
+        metadata: {
+          goalId: goal.id,
+          productId: goal.productId,
+          amount: refundAmount.toString(),
+          estimatedDelay: MOBILE_MONEY_REFUND_ETA,
+          channel: 'mobile_money',
+        },
+      });
+    }
+
     const updated = await this.prisma.savingsGoal.update({
       where: { id: goalId },
       data: {
@@ -340,6 +402,7 @@ export class SavingsGoalsService {
       metadata: {
         goalId: updated.id,
         productId: updated.productId,
+        refundAmount: hasRefund ? refundAmount.toString() : '0',
       },
     });
 

@@ -6,7 +6,8 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
-import { ConfirmHandoverDto } from './dto/confirm-handover.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { RecordDepositDto } from './dto/record-deposit.dto';
 import { SavingsEngineService } from './savings-engine.service';
@@ -19,14 +20,18 @@ export class SavingsEngineController {
     private readonly savingsGoalsService: SavingsGoalsService,
   ) {}
 
+  @Public()
   @Get('hello')
   getHello() {
     return this.savingsEngineService.getHello();
   }
 
   @Post('goals')
-  createGoal(@Body() dto: CreateSavingsGoalDto) {
-    return this.savingsGoalsService.create(dto);
+  createGoal(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CreateSavingsGoalDto,
+  ) {
+    return this.savingsGoalsService.create({ ...dto, userId });
   }
 
   @Get('goals/:id')
@@ -34,14 +39,14 @@ export class SavingsEngineController {
     return this.savingsGoalsService.findById(id);
   }
 
-  @Get('users/:userId/goals')
-  listUserGoals(@Param('userId', ParseUUIDPipe) userId: string) {
+  @Get('users/me/goals')
+  listMyGoals(@CurrentUser('userId') userId: string) {
     return this.savingsGoalsService.listByUser(userId);
   }
 
-  @Get('sellers/:sellerId/goals')
-  listSellerGoals(@Param('sellerId', ParseUUIDPipe) sellerId: string) {
-    return this.savingsGoalsService.listBySeller(sellerId);
+  @Get('sellers/me/goals')
+  listMySellerGoals(@CurrentUser('userId') userId: string) {
+    return this.savingsGoalsService.listBySeller(userId);
   }
 
   @Post('goals/:id/deposits')
@@ -52,12 +57,16 @@ export class SavingsEngineController {
     return this.savingsGoalsService.recordDeposit(id, dto);
   }
 
+  /**
+   * Remise produit : le vendeur authentifié est l’appelant
+   * (vérifié côté service contre le propriétaire de la boutique).
+   */
   @Post('goals/:id/confirm-handover')
   confirmHandover(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: ConfirmHandoverDto,
+    @CurrentUser('userId') sellerId: string,
   ) {
-    return this.savingsGoalsService.confirmHandover(id, dto.sellerId);
+    return this.savingsGoalsService.confirmHandover(id, sellerId);
   }
 
   @Post('goals/:id/cancel')

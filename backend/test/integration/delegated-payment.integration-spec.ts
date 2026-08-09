@@ -10,7 +10,11 @@ import { AppModule } from '../../src/app.module';
 import { ProductsService } from '../../src/modules/catalog/products.service';
 import { ShopsService } from '../../src/modules/catalog/shops.service';
 import { UsersService } from '../../src/modules/identity/users.service';
-import { LEDGER_PORT, type LedgerPort } from '../../src/modules/ledger-adapter';
+import {
+  LEDGER_PORT,
+  MobileMoneyAdapter,
+  type LedgerPort,
+} from '../../src/modules/ledger-adapter';
 import { PaymentLinksService } from '../../src/modules/payment-links/payment-links.service';
 import { SavingsGoalsService } from '../../src/modules/savings-engine/savings-goals.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
@@ -22,7 +26,7 @@ import {
 
 /**
  * Non-régression — paiement délégué complet :
- * lien généré → payé par un tiers → échéance clôturée → notification vendeur
+ * lien + collecte MM → webhook HMAC → échéance clôturée → notification vendeur
  * (objectif atteint via l'unique échéance = prix produit).
  */
 describe('Delegated payment scenario (integration)', () => {
@@ -33,6 +37,7 @@ describe('Delegated payment scenario (integration)', () => {
   let products: ProductsService;
   let savingsGoals: SavingsGoalsService;
   let paymentLinks: PaymentLinksService;
+  let mobileMoney: MobileMoneyAdapter;
   let ledger: LedgerPort;
   let dbAvailable = false;
 
@@ -51,6 +56,7 @@ describe('Delegated payment scenario (integration)', () => {
     products = moduleRef.get(ProductsService);
     savingsGoals = moduleRef.get(SavingsGoalsService);
     paymentLinks = moduleRef.get(PaymentLinksService);
+    mobileMoney = moduleRef.get(MobileMoneyAdapter);
     ledger = moduleRef.get<LedgerPort>(LEDGER_PORT);
   });
 
@@ -64,7 +70,7 @@ describe('Delegated payment scenario (integration)', () => {
     await resetIntegrationDatabase(prisma);
   });
 
-  it('lien → paiement tiers → échéance payée → notif vendeur + solde cohérent', async () => {
+  it('lien → webhook MM → échéance payée → notif vendeur + solde cohérent', async () => {
     if (!dbAvailable) {
       if (process.env.REQUIRE_INTEGRATION_DB === '1') {
         throw new Error('DATABASE_URL injoignable (REQUIRE_INTEGRATION_DB=1)');
@@ -115,32 +121,32 @@ describe('Delegated payment scenario (integration)', () => {
     const installment = goal.installments[0];
     expect(installment.status).toBe(InstallmentStatus.pending);
 
-    // 1) Lien de paiement généré
+    // 1) Lien + collecte Mobile Money initiée (push USSD sandbox)
+    const thirdPartyPhone = '+2250700999999';
+    expect(thirdPartyPhone).not.toBe(buyer.phone);
+
     const link = await paymentLinks.create({
       installmentId: installment.id,
+      phone: thirdPartyPhone,
+      operator: 'OM',
+      payerName: 'Tiers Payeur',
     });
     expect(link.status).toBe(PaymentLinkStatus.pending);
     expect(link.publicUrl).toContain(link.token);
     expect(Number(link.amount)).toBe(10000);
+    expect(link.mobileMoneyCollectionId).toBeTruthy();
+    expect(link.collection.providerRef).toBeTruthy();
 
     const publicPage = await paymentLinks.getPublicPage(link.token);
     expect(publicPage.requiresAccount).toBe(false);
     expect(publicPage.productName).toBe('Phone X');
 
-    // 2) Payé par un tiers (téléphone ≠ acheteur)
-    const thirdPartyPhone = '+2250700999999';
-    expect(thirdPartyPhone).not.toBe(buyer.phone);
-
-    const callback = await paymentLinks.handleMobileMoneyCallback(link.token, {
-      status: 'success',
-      payerName: 'Tiers Payeur',
-      payerPhone: thirdPartyPhone,
-      payerOperator: 'OM',
-      providerRef: `int-test-${Date.now()}`,
-    });
-
-    expect(callback.status).toBe(PaymentLinkStatus.paid);
-    expect(callback.payer?.phone).toBe(thirdPartyPhone);
+    // 2) Confirmation via webhook HMAC (seul chemin de crédit ledger)
+    const webhook = await mobileMoney.simulateSandboxCallback(
+      link.collection.providerRef,
+      true,
+    );
+    expect(webhook.ledgerCredited).toBe(true);
 
     // 3) Échéance clôturée
     const paidInstallment = await prisma.savingsInstallment.findUnique({
@@ -171,7 +177,7 @@ describe('Delegated payment scenario (integration)', () => {
     expect(sellerNotifs[0].type).toBe('goal_reached');
     expect(sellerNotifs[0].title).toMatch(/atteint/i);
 
-    // Solde ledger cohérent avec le versement
+    // Solde ledger cohérent avec le versement (un seul crédit)
     const balance = await ledger.getBalance(goal.ledgerAccountId);
     expect(balance).toBeCloseTo(10000, 2);
 

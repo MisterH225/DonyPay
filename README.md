@@ -107,10 +107,11 @@ API NestJS modulaire (préfixe `/api`) :
 
 | Module | Endpoint hello-world |
 |---|---|
-| identity | `GET /api/identity/hello` — User, KYC, uploads, 2FA, port `KycProviderPort` |
+| auth | `POST /api/auth/login` — JWT (OTP 2FA, pas de mot de passe) + refresh |
+| identity | `GET /api/identity/hello` — User, KYC, uploads, 2FA (`/me` via JWT) |
 | catalog | `GET /api/catalog/hello` — boutiques, produits, QR, listing |
 | savings-engine | `GET /api/savings-engine/hello` — objectifs schedule/flexi, dépôts LedgerPort, notif vendeur |
-| payment-links | `GET /api/payment-links/hello` — liens uniques, page publique, callback mobile money |
+| payment-links | `GET /api/payment-links/hello` — liens uniques, page publique |
 | ledger-adapter | `GET /api/ledger-adapter/hello` — `LedgerPort` (Mock + MobileMoney/CinetPay) |
 | notifications | `GET /api/notifications/hello` — port `NotificationPort`, mock SMS/push |
 | disputes | `GET /api/disputes/hello` — réclamations, PJ, historique, notation |
