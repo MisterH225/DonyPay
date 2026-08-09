@@ -184,7 +184,7 @@ export class PaymentLinksService {
       };
     }
 
-    this.refreshExpired(link);
+    await this.refreshExpired(link);
 
     if (link.status === PaymentLinkStatus.expired) {
       throw new GoneException('Payment link has expired');
