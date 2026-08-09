@@ -21,6 +21,7 @@ COPY backend ./backend
 # Conserve ts-node pour `prisma db seed` (SEED_DEMO) même en prod slim.
 RUN npm run prisma:generate --workspace=backend \
   && npm run build --workspace=backend \
+  && test -f backend/dist/main.js \
   && npm prune --omit=dev \
   && npm install --no-save --workspace=backend ts-node typescript @types/node
 
